@@ -1,0 +1,78 @@
+import numpy as np
+from matplotlib import pyplot as plt
+from sklearn.metrics import accuracy_score
+from tqdm import tqdm
+
+from disentanglement.data.blobs import get_train_test_blobs
+from disentanglement.models.entropy_models import train_entropy_dropout_model, mutual_information, expected_entropy
+from disentanglement.models.multi_head_models import train_disentangling_dropout_model, uncertainty
+from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES
+from disentanglement.util import normalise
+
+
+def run_decreasing_dataset(X_train, y_train, X_test, y_test):
+    disentangling_accuracies = []
+    disentangling_aleatorics = []
+    disentangling_epistemics = []
+
+    entropy_accuracies = []
+    entropy_aleatorics = []
+    entropy_epistemics = []
+
+    max_train_samples = y_train.shape[0]
+    dataset_sizes = np.logspace(start=1, stop=np.log2(max_train_samples), base=2, num=20)
+
+    for dataset_size in tqdm(dataset_sizes):
+        X_train_sub, y_train_sub = X_train[:int(dataset_size)], y_train[:int(dataset_size)]
+
+        disentangle_model = train_disentangling_dropout_model(X_train_sub, y_train_sub)
+        entropy_model = train_entropy_dropout_model(X_train_sub, y_train_sub)
+
+        pred_mean, pred_ale_std, pred_epi_std = disentangle_model.predict(X_test, batch_size=BATCH_SIZE)
+        entropy_preds = entropy_model.predict_samples(X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
+        disentangling_accuracies.append(accuracy_score(y_test, pred_mean.argmax(axis=1)))
+        disentangling_aleatorics.append(uncertainty(pred_ale_std).mean())
+        disentangling_epistemics.append(uncertainty(pred_epi_std).mean())
+
+        entropy_accuracies.append(accuracy_score(y_test, entropy_preds.mean(axis=0).argmax(axis=1)))
+        entropy_aleatorics.append(expected_entropy(entropy_preds).mean())
+        entropy_epistemics.append(mutual_information(entropy_preds).mean())
+
+    return disentangling_accuracies, disentangling_aleatorics, disentangling_epistemics, entropy_accuracies, entropy_aleatorics, entropy_epistemics, dataset_sizes
+
+
+def plot_decreasing_dataset():
+    X_train, y_train, X_test, y_test = get_train_test_blobs()
+    disentangling_accuracies, disentangling_aleatorics, disentangling_epistemics, entropy_accuracies, entropy_aleatorics, entropy_epistemics, dataset_sizes = run_decreasing_dataset(
+        X_train, y_train, X_test, y_test)
+
+    plt.plot(dataset_sizes, disentangling_accuracies, label="Disentangling model")
+    plt.plot(dataset_sizes, entropy_accuracies, label="Entropy model")
+    plt.ylabel("Accuracy")
+    plt.xlabel("Dataset size")
+    plt.legend()
+    plt.savefig("../../figures/decreasing_dataset_accuracies.pdf")
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 6), sharey=True)
+    axes[0].plot(dataset_sizes, normalise(disentangling_aleatorics), label="Aleatoric")
+    axes[0].plot(dataset_sizes, normalise(disentangling_epistemics), label="Epistemic")
+    axes[0].set_title("Multi-head disentangled")
+    axes[0].set_ylabel("Uncertainty (normalised)")
+    axes[0].set_xlabel("Dataset size")
+
+    axes[1].plot(dataset_sizes,
+                 normalise(entropy_aleatorics),
+                 label="Aleatoric")
+    axes[1].plot(dataset_sizes,
+                 normalise(entropy_epistemics),
+                 label="Epistemic")
+    axes[1].set_title("Entropy disentangled")
+    axes[1].set_xlabel("Dataset size")
+    axes[1].legend()
+    fig.suptitle("Disentangled uncertainty over decreasing dataset sizes for blobs", fontsize=20)
+    fig.tight_layout()
+    plt.savefig("../../figures/decreasing_dataset_disentangled_accuracies.pdf")
+
+
+if __name__ == "__main__":
+    plot_decreasing_dataset()

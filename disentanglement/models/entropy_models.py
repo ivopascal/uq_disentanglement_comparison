@@ -19,9 +19,9 @@ def mutual_information(probs):
     return predictive_entropy(probs) - expected_entropy(probs)
 
 
-def train_entropy_model(model_creator, x_train, y_train, epochs):
+def train_entropy_model(model_creator, x_train, y_train, n_classes, epochs):
     model = model_creator()
-    model.add(Dense(2, activation="softmax"))
+    model.add(Dense(n_classes, activation="softmax"))
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 

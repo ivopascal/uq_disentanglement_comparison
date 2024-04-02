@@ -12,7 +12,7 @@ def uncertainty(probs):
 
 
 def two_head_model(trunk_model, num_classes=2, num_samples=100):
-    inp = Input(shape=(2,))
+    inp = Input(shape=trunk_model.layers[0].input.shape[1:])  # input starts with None
     x = trunk_model(inp)
     logit_mean = Dense(num_classes, activation="linear")(x)
     logit_var = Dense(num_classes, activation="softplus")(x)
@@ -26,8 +26,8 @@ def two_head_model(trunk_model, num_classes=2, num_samples=100):
     return train_model, pred_model
 
 
-def train_disentangle_model(trunk_model_creator, x_train, y_train, epochs):
-    train_model, pred_model = two_head_model(trunk_model_creator())
+def train_disentangle_model(trunk_model_creator, x_train, y_train, n_classes, epochs):
+    train_model, pred_model = two_head_model(trunk_model_creator(), n_classes)
     train_model.fit(x_train, y_train, verbose=2, epochs=epochs, batch_size=BATCH_SIZE)
 
     fin_model = DisentangledStochasticClassifier(pred_model, epi_num_samples=NUM_SAMPLES)

@@ -24,13 +24,14 @@ def run_decreasing_dataset(dataset, architecture_func, epochs):
     entropy_epistemics = []
     X_train, y_train, X_test, y_test = dataset
     max_train_samples = y_train.shape[0]
+    n_classes = len(np.unique(y_train))
     dataset_sizes = np.logspace(start=1, stop=np.log2(max_train_samples), base=2, num=20)
 
     for dataset_size in tqdm(dataset_sizes):
         X_train_sub, y_train_sub = X_train[:int(dataset_size)], y_train[:int(dataset_size)]
 
-        disentangle_model = train_disentangle_model(architecture_func, X_train_sub, y_train_sub, epochs=epochs)
-        entropy_model = train_entropy_model(architecture_func, X_train_sub, y_train_sub, epochs=epochs)
+        disentangle_model = train_disentangle_model(architecture_func, X_train_sub, y_train_sub, n_classes, epochs=epochs)
+        entropy_model = train_entropy_model(architecture_func, X_train_sub, y_train_sub, n_classes, epochs=epochs)
 
         pred_mean, pred_ale_std, pred_epi_std = disentangle_model.predict(X_test, batch_size=BATCH_SIZE)
         entropy_preds = entropy_model.predict_samples(X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)

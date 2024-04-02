@@ -4,9 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_auc_score
 
-from disentanglement.data.cifar10 import get_train_test_cifar_10
 from disentanglement.data.datasets import get_datasets
-from disentanglement.models.architectures import get_cifar10_dropout_architecture
 from disentanglement.models.entropy_models import train_entropy_model, expected_entropy, mutual_information
 from disentanglement.models.multi_head_models import train_disentangle_model, uncertainty
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES
@@ -66,7 +64,6 @@ def ood_class_detection(dataset_name, config):
         os.mkdir("../../figures/ood_class/")
 
     plt.savefig(f"../../figures/ood_class/histograms_{dataset_name}.pdf")
-    plt.show()
 
 
 if __name__ == "__main__":

@@ -1,16 +1,20 @@
+import os.path
+
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 
-from disentanglement.data.blobs import get_train_test_blobs
-from disentanglement.models.entropy_models import train_entropy_dropout_model, mutual_information, expected_entropy
-from disentanglement.models.multi_head_models import train_disentangling_dropout_model, uncertainty
+from disentanglement.data.datasets import get_datasets
+from disentanglement.models.entropy_models import mutual_information, expected_entropy, \
+    train_entropy_model
+from disentanglement.models.multi_head_models import uncertainty, \
+    train_disentangle_model
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES
 from disentanglement.util import normalise
 
 
-def run_decreasing_dataset(X_train, y_train, X_test, y_test):
+def run_decreasing_dataset(dataset, architecture_func, epochs):
     disentangling_accuracies = []
     disentangling_aleatorics = []
     disentangling_epistemics = []
@@ -18,15 +22,15 @@ def run_decreasing_dataset(X_train, y_train, X_test, y_test):
     entropy_accuracies = []
     entropy_aleatorics = []
     entropy_epistemics = []
-
+    X_train, y_train, X_test, y_test = dataset
     max_train_samples = y_train.shape[0]
     dataset_sizes = np.logspace(start=1, stop=np.log2(max_train_samples), base=2, num=20)
 
     for dataset_size in tqdm(dataset_sizes):
         X_train_sub, y_train_sub = X_train[:int(dataset_size)], y_train[:int(dataset_size)]
 
-        disentangle_model = train_disentangling_dropout_model(X_train_sub, y_train_sub)
-        entropy_model = train_entropy_dropout_model(X_train_sub, y_train_sub)
+        disentangle_model = train_disentangle_model(architecture_func, X_train_sub, y_train_sub, epochs=epochs)
+        entropy_model = train_entropy_model(architecture_func, X_train_sub, y_train_sub, epochs=epochs)
 
         pred_mean, pred_ale_std, pred_epi_std = disentangle_model.predict(X_test, batch_size=BATCH_SIZE)
         entropy_preds = entropy_model.predict_samples(X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
@@ -41,17 +45,20 @@ def run_decreasing_dataset(X_train, y_train, X_test, y_test):
     return disentangling_accuracies, disentangling_aleatorics, disentangling_epistemics, entropy_accuracies, entropy_aleatorics, entropy_epistemics, dataset_sizes
 
 
-def plot_decreasing_dataset():
-    X_train, y_train, X_test, y_test = get_train_test_blobs()
+def plot_decreasing_dataset(dataset_name, config):
     disentangling_accuracies, disentangling_aleatorics, disentangling_epistemics, entropy_accuracies, entropy_aleatorics, entropy_epistemics, dataset_sizes = run_decreasing_dataset(
-        X_train, y_train, X_test, y_test)
+        *config)
 
     plt.plot(dataset_sizes, disentangling_accuracies, label="Disentangling model")
     plt.plot(dataset_sizes, entropy_accuracies, label="Entropy model")
     plt.ylabel("Accuracy")
     plt.xlabel("Dataset size")
     plt.legend()
-    plt.savefig("../../figures/decreasing_dataset_accuracies.pdf")
+
+    if not os.path.exists("../../figures/decreasing_dataset/"):
+        os.mkdir("../../figures/decreasing_dataset/")
+
+    plt.savefig(f"../../figures/decreasing_dataset/accuracies_{dataset_name}.pdf")
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 6), sharey=True)
     axes[0].plot(dataset_sizes, normalise(disentangling_aleatorics), label="Aleatoric")
@@ -69,10 +76,11 @@ def plot_decreasing_dataset():
     axes[1].set_title("Entropy disentangled")
     axes[1].set_xlabel("Dataset size")
     axes[1].legend()
-    fig.suptitle("Disentangled uncertainty over decreasing dataset sizes for blobs", fontsize=20)
+    fig.suptitle(f"Disentangled uncertainty over decreasing dataset sizes for {dataset_name}", fontsize=20)
     fig.tight_layout()
-    plt.savefig("../../figures/decreasing_dataset_disentangled_accuracies.pdf")
+    plt.savefig(f"../../figures/decreasing_dataset/disentangled_uncertainties_{dataset_name}.pdf")
 
 
 if __name__ == "__main__":
-    plot_decreasing_dataset()
+    for dataset_name, config in get_datasets().items():
+        plot_decreasing_dataset(dataset_name, config)

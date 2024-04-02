@@ -62,18 +62,19 @@ def plot_decreasing_dataset(dataset_name, config):
     plt.savefig(f"../../figures/decreasing_dataset/accuracies_{dataset_name}.pdf")
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 6), sharey=True)
-    axes[0].plot(dataset_sizes, normalise(disentangling_aleatorics), label="Aleatoric")
     axes[0].plot(dataset_sizes, normalise(disentangling_epistemics), label="Epistemic")
+    axes[0].plot(dataset_sizes, normalise(disentangling_aleatorics), label="Aleatoric")
     axes[0].set_title("Multi-head disentangled")
     axes[0].set_ylabel("Uncertainty (normalised)")
     axes[0].set_xlabel("Dataset size")
 
     axes[1].plot(dataset_sizes,
-                 normalise(entropy_aleatorics),
-                 label="Aleatoric")
-    axes[1].plot(dataset_sizes,
                  normalise(entropy_epistemics),
                  label="Epistemic")
+    axes[1].plot(dataset_sizes,
+                 normalise(entropy_aleatorics),
+                 label="Aleatoric")
+
     axes[1].set_title("Entropy disentangled")
     axes[1].set_xlabel("Dataset size")
     axes[1].legend()
@@ -84,4 +85,5 @@ def plot_decreasing_dataset(dataset_name, config):
 
 if __name__ == "__main__":
     for dataset_name, config in get_datasets().items():
-        plot_decreasing_dataset(dataset_name, config)
+        if dataset_name == "blobs":
+            plot_decreasing_dataset(dataset_name, config)

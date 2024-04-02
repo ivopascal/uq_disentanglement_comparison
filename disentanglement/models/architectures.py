@@ -24,6 +24,5 @@ def get_cifar10_dropout_architecture(prob=0.3):
     model.add(Flatten())
     model.add(Dense(64, activation='relu'))
     model.add(StochasticDropout(prob))
-    model.add(Dense(10))
 
     return model

@@ -5,6 +5,8 @@ from keras.layers import Dense, Dropout
 
 import numpy as np
 
+from disentanglement.settings import BATCH_SIZE
+
 
 def predictive_entropy(probs, axis=-1, eps=1e-6):
     probs = np.mean(probs, axis=0)
@@ -25,7 +27,7 @@ def train_entropy_model(model_creator, x_train, y_train, n_classes, epochs):
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    model.fit(x_train, y_train, verbose=2, epochs=epochs)
+    model.fit(x_train, y_train, verbose=2, epochs=epochs, batch_size=BATCH_SIZE)
     mc_model = StochasticClassifier(model)
 
     return mc_model

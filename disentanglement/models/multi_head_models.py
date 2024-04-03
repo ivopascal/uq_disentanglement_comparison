@@ -4,7 +4,7 @@ from keras_uncertainty.models import DisentangledStochasticClassifier
 from keras.layers import Dense, Input
 from keras_uncertainty.utils import numpy_entropy
 
-from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES
+from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE
 
 
 def uncertainty(probs):
@@ -27,7 +27,12 @@ def two_head_model(trunk_model, num_classes=2, num_samples=100):
 
 
 def train_disentangle_model(trunk_model_creator, x_train, y_train, n_classes, epochs):
-    train_model, pred_model = two_head_model(trunk_model_creator(), n_classes)
+    trunk_model, _ = trunk_model_creator()  # TODO: If uq_name is "Ensemble" we run different code here
+    train_model, pred_model = two_head_model(trunk_model, n_classes)
+
+    if TEST_MODE:
+        epochs = 1
+
     train_model.fit(x_train, y_train, verbose=2, epochs=epochs, batch_size=BATCH_SIZE)
 
     fin_model = DisentangledStochasticClassifier(pred_model, epi_num_samples=NUM_SAMPLES)

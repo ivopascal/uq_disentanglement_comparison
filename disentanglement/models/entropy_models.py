@@ -1,11 +1,10 @@
-from keras.models import Sequential
 from keras_uncertainty.models import StochasticClassifier
-from keras.layers import Dense, Dropout
+from keras.layers import Dense
 
 
 import numpy as np
 
-from disentanglement.settings import BATCH_SIZE
+from disentanglement.settings import BATCH_SIZE, TEST_MODE
 
 
 def predictive_entropy(probs, axis=-1, eps=1e-6):
@@ -22,10 +21,13 @@ def mutual_information(probs):
 
 
 def train_entropy_model(model_creator, x_train, y_train, n_classes, epochs):
-    model = model_creator()
+    model, _ = model_creator()
     model.add(Dense(n_classes, activation="softmax"))
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+
+    if TEST_MODE:
+        epochs = 1
 
     model.fit(x_train, y_train, verbose=2, epochs=epochs, batch_size=BATCH_SIZE)
     mc_model = StochasticClassifier(model)

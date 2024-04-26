@@ -24,7 +24,7 @@ def partial_shuffle_dataset(X, y, percentage):
 def run_label_noise(dataset, architecture_func, epochs):
     X_train, y_train, X_test, y_test = dataset
 
-    noises = np.arange(0, 1, 0.1)
+    noises = np.arange(0, 1.05, 0.05)
     if TEST_MODE:
         noises = np.arange(0, 1, 0.4)
     n_classes = len(np.unique(y_train))
@@ -70,7 +70,7 @@ def label_noise(dataset_name, config):
         ax_acc.plot(noises, disentangling_accuracies, label="Gaussian Logits")
         ax_acc.plot(noises, entropy_accuracies, label="Information Theoretic")
         ax_acc.set_ylabel("Accuracy")
-        ax_acc.set_xlabel("Dataset size")
+        ax_acc.set_xlabel("Labels shuffled")
         ax_acc.legend()
 
         if not os.path.exists("../../figures/noise_dataset/"):
@@ -111,5 +111,5 @@ def label_noise(dataset_name, config):
 
 if __name__ == "__main__":
     start_time = datetime.now()
-    label_noise("blobs", get_datasets()["blobs"])
+    label_noise("CIFAR10", get_datasets()["CIFAR10"])
     print(f"Running Decreasing Dataset experiments took: {datetime.now() - start_time}")

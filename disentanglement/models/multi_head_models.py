@@ -1,6 +1,6 @@
 from keras.models import Model
 from keras_uncertainty.layers import SamplingSoftmax
-from keras_uncertainty.models import DisentangledStochasticClassifier
+from keras_uncertainty.models import DisentangledStochasticClassifier, DeepEnsembleClassifier
 from keras.layers import Dense, Input
 from keras_uncertainty.utils import numpy_entropy
 
@@ -12,7 +12,9 @@ def uncertainty(probs):
 
 
 def two_head_model(trunk_model, num_classes=2, num_samples=100):
-    inp = Input(shape=trunk_model.layers[0].input.shape[1:])  # input starts with None
+    input_shape = trunk_model.layers[0].input.shape[1:]
+
+    inp = Input(shape=input_shape)
     x = trunk_model(inp)
     logit_mean = Dense(num_classes, activation="linear")(x)
     logit_var = Dense(num_classes, activation="softplus")(x)
@@ -27,7 +29,16 @@ def two_head_model(trunk_model, num_classes=2, num_samples=100):
 
 
 def train_disentangle_model(trunk_model_creator, x_train, y_train, n_classes, epochs):
-    trunk_model, _ = trunk_model_creator()  # TODO: If uq_name is "Ensemble" we run different code here
+    trunk_model, _ = trunk_model_creator()
+
+    if isinstance(trunk_model, DeepEnsembleClassifier):
+        for i, estimator in enumerate(trunk_model.train_estimators):
+            train_model, pred_model = two_head_model(estimator, n_classes)
+            train_model.fit(x_train, y_train, verbose=2, epochs=epochs, batch_size=BATCH_SIZE)
+            trunk_model.test_estimators[i] = pred_model
+        trunk_model.outputs = [0, 1]  # This tells Stochastic Model that there's two outputs
+        return DisentangledStochasticClassifier(trunk_model, epi_num_samples=trunk_model.num_estimators)
+
     train_model, pred_model = two_head_model(trunk_model, n_classes)
 
     if TEST_MODE:

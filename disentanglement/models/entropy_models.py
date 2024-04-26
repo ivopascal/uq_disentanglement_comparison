@@ -1,4 +1,4 @@
-from keras_uncertainty.models import StochasticClassifier
+from keras_uncertainty.models import StochasticClassifier, DeepEnsembleClassifier
 from keras.layers import Dense
 
 
@@ -22,6 +22,14 @@ def mutual_information(probs):
 
 def train_entropy_model(model_creator, x_train, y_train, n_classes, epochs):
     model, _ = model_creator()
+
+    if isinstance(model, DeepEnsembleClassifier):
+        for estimator in model.train_estimators:
+            estimator.add(Dense(n_classes, activation="softmax"))
+            estimator.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+        model.fit(x_train, y_train, verbose=2, epochs=epochs, batch_size=BATCH_SIZE)
+        return model
+
     model.add(Dense(n_classes, activation="softmax"))
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])

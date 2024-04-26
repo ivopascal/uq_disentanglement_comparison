@@ -63,8 +63,8 @@ def plot_decreasing_dataset(dataset_name, config):
             dataset, architecture_func, epochs)
 
         fig_acc, ax_acc = plt.subplots()
-        ax_acc.plot(dataset_sizes, disentangling_accuracies, label="Disentangling model")
-        ax_acc.plot(dataset_sizes, entropy_accuracies, label="Entropy model")
+        ax_acc.plot(dataset_sizes, disentangling_accuracies, label="Gaussian Logits")
+        ax_acc.plot(dataset_sizes, entropy_accuracies, label="Information Theoretic")
         ax_acc.set_ylabel("Accuracy")
         ax_acc.set_xlabel("Dataset size")
         ax_acc.legend()
@@ -89,8 +89,8 @@ def plot_decreasing_dataset(dataset_name, config):
                                label="Aleatoric")
 
         if arch_idx == 0:
-            axes[0][arch_idx].set_ylabel("Multi-Head Disentangled\nUncertainty (normalised)")
-            axes[1][arch_idx].set_ylabel("Entropy Disentangled\nUncertainty (normalised)")
+            axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty (normalised)")
+            axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty (normalised)")
 
         if arch_idx == len(architectures) - 1:
             axes[0][arch_idx].legend()

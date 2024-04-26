@@ -33,7 +33,7 @@ def get_cifar10_dropout_architecture(prob=0.3):
     model.add(Dense(64, activation='relu'))
     model.add(StochasticDropout(prob))
 
-    return model, "MC-DropConnect"
+    return model, "MC-Dropout"
 
 
 def get_cifar10_dropconnect_architecture(prob=0.3):
@@ -47,4 +47,4 @@ def get_cifar10_dropconnect_architecture(prob=0.3):
     model.add(Flatten())
     model.add(DropConnectDense(64, activation='relu', prob=prob))
 
-    return model
+    return model, "MC-DropConnect"

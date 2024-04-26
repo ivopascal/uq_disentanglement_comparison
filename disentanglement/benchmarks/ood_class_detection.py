@@ -20,7 +20,8 @@ def ood_class_detection(dataset_name, config):
     y_train_id = y_train[y_train != ood_class]
     n_classes = len(np.unique(y_train_id))
 
-    for architecture_func, uq_name in architectures:
+    for architecture_func in architectures:
+        _, uq_name = architecture_func()
         disentangle_model = train_disentangle_model(architecture_func, X_train_id, y_train_id, n_classes, epochs=epochs)
         entropy_model = train_entropy_model(architecture_func, X_train_id, y_train_id, n_classes, epochs=epochs)
 
@@ -33,7 +34,7 @@ def ood_class_detection(dataset_name, config):
         epi_disentangle = uncertainty(pred_epi_std)
 
         y_test = y_test.reshape(-1)
-        axes[0][0].set_ylabel("Multi-head disentangle")
+        axes[0][0].set_ylabel("Gaussian Logits")
         axes[0][0].hist(ale_disentangle[y_test != ood_class], label="ID")
         axes[0][0].hist(ale_disentangle[y_test == ood_class], label="OOD")
         axes[0][0].title.set_text(f"AUROC = {roc_auc_score(y_test == ood_class, ale_disentangle):.3f}")
@@ -49,7 +50,7 @@ def ood_class_detection(dataset_name, config):
         ale_entropy = expected_entropy(entropy_preds)
         epi_entropy = mutual_information(entropy_preds)
 
-        axes[1][0].set_ylabel("Entropy disentangle")
+        axes[1][0].set_ylabel("Information Theoretic")
         axes[1][0].hist(ale_entropy[y_test != ood_class], label="ID")
         axes[1][0].hist(ale_entropy[y_test == ood_class], label="OOD")
         axes[1][0].title.set_text(f"AUROC = {roc_auc_score(y_test == ood_class, ale_entropy):.3f}")

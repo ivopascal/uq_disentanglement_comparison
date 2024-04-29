@@ -8,8 +8,9 @@ import numpy as np
 from tqdm import tqdm
 
 from disentanglement.data.datasets import get_datasets
+from disentanglement.datatypes import UncertaintyResults
 from disentanglement.models.information_theoretic_models import train_it_model, expected_entropy, mutual_information
-from disentanglement.models.multi_head_models import train_gaussian_logits_model, uncertainty
+from disentanglement.models.gaussian_logits_models import train_gaussian_logits_model, uncertainty
 from disentanglement.settings import NUM_SAMPLES, BATCH_SIZE, TEST_MODE, FIGURE_FOLDER
 from disentanglement.util import normalise
 
@@ -30,33 +31,26 @@ def run_label_noise(dataset, architecture_func, epochs):
         epochs = 2
     n_classes = len(np.unique(y_train))
 
-    disentangling_accuracies = []
-    disentangling_aleatorics = []
-    disentangling_epistemics = []
-
-    entropy_accuracies = []
-    entropy_aleatorics = []
-    entropy_epistemics = []
+    gaussian_logits_results = UncertaintyResults()
+    it_results = UncertaintyResults()
 
     for noise in tqdm(noises):
         X_noisy, y_noisy = partial_shuffle_dataset(X_train, y_train, percentage=noise)
         X_test_noisy, y_test_noisy = partial_shuffle_dataset(X_test, y_test, percentage=noise)
 
-        disentangle_model = train_gaussian_logits_model(architecture_func, X_noisy, y_noisy, n_classes,
+        gaussian_logits_model = train_gaussian_logits_model(architecture_func, X_noisy, y_noisy, n_classes,
                                                         epochs=epochs)
-        entropy_model = train_it_model(architecture_func, X_noisy, y_noisy, n_classes, epochs=epochs)
+        pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(X_test_noisy, batch_size=BATCH_SIZE)
+        gaussian_logits_results.append_values(accuracy_score(y_test, pred_mean.argmax(axis=1)),
+                                              uncertainty(pred_ale_std).mean(), uncertainty(pred_epi_std).mean(),
+                                              noise)
 
-        pred_mean, pred_ale_std, pred_epi_std = disentangle_model.predict(X_test_noisy, batch_size=BATCH_SIZE)
-        entropy_preds = entropy_model.predict_samples(X_test_noisy, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
-        disentangling_accuracies.append(accuracy_score(y_test_noisy, pred_mean.argmax(axis=1)))
-        disentangling_aleatorics.append(uncertainty(pred_ale_std).mean())
-        disentangling_epistemics.append(uncertainty(pred_epi_std).mean())
+        it_model = train_it_model(architecture_func, X_noisy, y_noisy, n_classes, epochs=epochs)
+        it_preds = it_model.predict_samples(X_test_noisy, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
+        it_results.append_values(accuracy_score(y_test, it_preds.mean(axis=0).argmax(axis=1)),
+                                 expected_entropy(it_preds).mean(), mutual_information(it_preds).mean(), noise)
 
-        entropy_accuracies.append(accuracy_score(y_test_noisy, entropy_preds.mean(axis=0).argmax(axis=1)))
-        entropy_aleatorics.append(expected_entropy(entropy_preds).mean())
-        entropy_epistemics.append(mutual_information(entropy_preds).mean())
-
-    return disentangling_accuracies, disentangling_aleatorics, disentangling_epistemics, entropy_accuracies, entropy_aleatorics, entropy_epistemics, noises
+    return gaussian_logits_results, it_results
 
 
 def label_noise(dataset_name, config):
@@ -65,11 +59,11 @@ def label_noise(dataset_name, config):
 
     for arch_idx, architecture in enumerate(architectures):
         uq_name = architecture.uq_name
-        disentangling_accuracies, disentangling_aleatorics, disentangling_epistemics, entropy_accuracies, entropy_aleatorics, entropy_epistemics, noises = run_label_noise(dataset, architecture.model_function, epochs)
-
+        gaussian_logits_results, it_results = run_label_noise(dataset, architecture.model_function, epochs)
+        noises = gaussian_logits_results.changed_parameter_values
         fig_acc, ax_acc = plt.subplots()
-        ax_acc.plot(noises, disentangling_accuracies, label="Gaussian Logits")
-        ax_acc.plot(noises, entropy_accuracies, label="Information Theoretic")
+        ax_acc.plot(noises, gaussian_logits_results.accuracies, label="Gaussian Logits")
+        ax_acc.plot(noises, it_results.accuracies, label="Information Theoretic")
         ax_acc.set_ylabel("Accuracy")
         ax_acc.set_xlabel("Labels shuffled")
         ax_acc.legend()
@@ -82,15 +76,15 @@ def label_noise(dataset_name, config):
         else:
             fig_acc.savefig(f"{FIGURE_FOLDER}/noise_datasets/accuracies_{uq_name}_{dataset_name}.pdf")
 
-        axes[0][arch_idx].plot(noises, normalise(disentangling_epistemics), label="Epistemic")
-        axes[0][arch_idx].plot(noises, normalise(disentangling_aleatorics), label="Aleatoric")
+        axes[0][arch_idx].plot(noises, normalise(gaussian_logits_results.epistemic_uncertainties), label="Epistemic")
+        axes[0][arch_idx].plot(noises, normalise(gaussian_logits_results.aleatoric_uncertainties), label="Aleatoric")
         axes[0][arch_idx].set_title(uq_name)
 
         axes[1][arch_idx].plot(noises,
-                               normalise(entropy_epistemics),
+                               normalise(it_results.epistemic_uncertainties),
                                label="Epistemic")
         axes[1][arch_idx].plot(noises,
-                               normalise(entropy_aleatorics),
+                               normalise(it_results.aleatoric_uncertainties),
                                label="Aleatoric")
         axes[1][arch_idx].set_xlabel("Labels shuffled")
 

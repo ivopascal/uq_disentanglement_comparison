@@ -3,11 +3,11 @@ from typing import Union
 from keras_uncertainty.models import StochasticClassifier
 from keras.layers import Dense
 
-
 import numpy as np
+from sklearn.metrics import accuracy_score
 
 from disentanglement.models.architectures import CustomDeepEnsembleClassifier
-from disentanglement.settings import BATCH_SIZE, TEST_MODE
+from disentanglement.settings import BATCH_SIZE, TEST_MODE, NUM_SAMPLES
 
 
 def predictive_entropy(probs, axis=-1, eps=1e-6) -> np.ndarray:
@@ -15,7 +15,7 @@ def predictive_entropy(probs, axis=-1, eps=1e-6) -> np.ndarray:
     return -np.sum(probs * np.log(probs + eps), axis=axis)
 
 
-def expected_entropy(probs, eps=1e-6)-> np.ndarray:
+def expected_entropy(probs, eps=1e-6) -> np.ndarray:
     return -np.mean((probs * np.log(probs + eps)).sum(axis=-1), axis=0)
 
 
@@ -46,3 +46,14 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
 
     return mc_model
 
+
+def get_average_uncertainty_it(dataset, architecture_func, epochs):
+    X_train, y_train, X_test, y_test = dataset
+    n_classes = len(np.unique(y_train))
+    it_model = train_it_model(architecture_func, X_train, y_train, n_classes, epochs=epochs)
+
+    it_preds = it_model.predict_samples(X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
+
+    return accuracy_score(y_test, it_preds.mean(axis=0).argmax(axis=1)), \
+        expected_entropy(it_preds).mean(), \
+        mutual_information(it_preds).mean()

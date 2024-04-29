@@ -3,6 +3,7 @@ from datetime import datetime
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.ticker import AutoLocator
 from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 
@@ -48,49 +49,52 @@ def run_decreasing_dataset(dataset, model_function, epochs):
     return gaussian_logits_results, it_results
 
 
+def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False):
+    ax.plot(results.changed_parameter_values, normalise(results.epistemic_uncertainties), label="Epistemic")
+    ax.plot(results.changed_parameter_values, normalise(results.aleatoric_uncertainties), label="Aleatoric")
+
+    accuracy_axes = ax.twinx()
+    accuracy_axes.plot(results.changed_parameter_values, results.accuracies,
+                       label="Accuracy", color='green')
+
+    if is_final_column:
+        accuracy_axes.set_ylabel("Accuracy", color='green')
+    else:
+        plt.setp(accuracy_axes.get_yticklabels(), visible=False)
+
+    if accuracy_y_ax_to_share:
+        accuracy_axes.sharey(accuracy_y_ax_to_share)
+    return accuracy_axes
+
+
 def plot_decreasing_dataset(dataset_name, config):
     dataset, architectures, epochs = config
 
     fig, axes = plt.subplots(2, len(architectures), figsize=(10, 6), sharey=True, sharex=True)
+    accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(architectures):
         gaussian_logits_results, it_results = run_decreasing_dataset(
             dataset, architecture.model_function, epochs)
-        dataset_sizes = gaussian_logits_results.changed_parameter_values
-        fig_acc, ax_acc = plt.subplots()
-        ax_acc.plot(dataset_sizes, gaussian_logits_results.accuracies, label="Gaussian Logits")
-        ax_acc.plot(dataset_sizes, it_results.accuracies, label="Information Theoretic")
-        ax_acc.set_ylabel("Accuracy")
-        ax_acc.set_xlabel("Dataset size")
-        ax_acc.legend()
 
         if not os.path.exists(f"{FIGURE_FOLDER}/decreasing_dataset/"):
             os.mkdir(f"{FIGURE_FOLDER}/decreasing_dataset/")
 
-        if TEST_MODE:
-            fig_acc.savefig(
-                f"{FIGURE_FOLDER}/decreasing_dataset/accuracies_{architecture.uq_name}_{dataset_name}_TEST.pdf")
-        else:
-            fig_acc.savefig(f"{FIGURE_FOLDER}/decreasing_dataset/accuracies_{architecture.uq_name}_{dataset_name}.pdf")
+        is_first_column = arch_idx == 0
+        is_final_column = arch_idx == len(architectures) - 1
 
-        axes[0][arch_idx].plot(dataset_sizes, normalise(gaussian_logits_results.epistemic_uncertainties),
-                               label="Epistemic")
-        axes[0][arch_idx].plot(dataset_sizes, normalise(gaussian_logits_results.aleatoric_uncertainties),
-                               label="Aleatoric")
+        accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
+                                                          accuracy_y_ax_to_share, is_final_column)
+        accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
+                                                          accuracy_y_ax_to_share, is_final_column)
+
         axes[0][arch_idx].set_title(architecture.uq_name)
-
-        axes[1][arch_idx].plot(dataset_sizes,
-                               normalise(it_results.epistemic_uncertainties),
-                               label="Epistemic")
-        axes[1][arch_idx].plot(dataset_sizes,
-                               normalise(it_results.aleatoric_uncertainties),
-                               label="Aleatoric")
         axes[1][arch_idx].set_xlabel("Dataset size")
 
-        if arch_idx == 0:
+        if is_first_column:
             axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty (normalised)")
             axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty (normalised)")
 
-        if arch_idx == len(architectures) - 1:
+        if is_final_column:
             axes[0][arch_idx].legend()
 
     fig.suptitle(f"Disentangled uncertainty over decreasing dataset sizes for {dataset_name}", fontsize=20)

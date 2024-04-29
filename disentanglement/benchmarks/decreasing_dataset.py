@@ -84,6 +84,7 @@ def plot_decreasing_dataset(dataset_name, config):
         axes[1][arch_idx].plot(dataset_sizes,
                                normalise(it_results.aleatoric_uncertainties),
                                label="Aleatoric")
+        axes[1][arch_idx].set_xlabel("Dataset size")
 
         if arch_idx == 0:
             axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty (normalised)")
@@ -91,8 +92,6 @@ def plot_decreasing_dataset(dataset_name, config):
 
         if arch_idx == len(architectures) - 1:
             axes[0][arch_idx].legend()
-            axes[0][arch_idx].set_xlabel("Dataset size")
-            axes[1][arch_idx].set_xlabel("Dataset size")
 
     fig.suptitle(f"Disentangled uncertainty over decreasing dataset sizes for {dataset_name}", fontsize=20)
     fig.tight_layout()

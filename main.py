@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from tqdm import tqdm
 
 from disentanglement.benchmarks.decreasing_dataset import plot_decreasing_dataset
@@ -8,6 +10,7 @@ from disentanglement.settings import TEST_MODE
 
 
 def main():
+    start_time = datetime.now()
     for name, conf in tqdm(get_datasets().items()):
         if TEST_MODE:
             if name == "blobs":
@@ -20,6 +23,9 @@ def main():
             plot_decreasing_dataset(name, conf)
             label_noise(name, conf)
             ood_class_detection(name, conf)
+    end_time = datetime.now()
+
+    print(f"Ran all experiments in {end_time - start_time}")
 
 
 if __name__ == "__main__":

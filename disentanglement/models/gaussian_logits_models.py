@@ -49,11 +49,3 @@ def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes
     fin_model = DisentangledStochasticClassifier(pred_model, epi_num_samples=NUM_SAMPLES)
 
     return fin_model
-
-
-def eval_disentangled_model(disentangled_model, samples):
-    pred_mean, pred_ale_std, pred_epi_std = disentangled_model.predict(samples, batch_size=BATCH_SIZE)
-    ale_entropy = uncertainty(pred_ale_std)
-    epi_entropy = uncertainty(pred_epi_std)
-
-    return ale_entropy, epi_entropy

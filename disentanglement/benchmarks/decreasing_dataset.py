@@ -9,7 +9,7 @@ from tqdm import tqdm
 from disentanglement.data.datasets import get_datasets
 from disentanglement.datatypes import UncertaintyResults
 from disentanglement.models.information_theoretic_models import mutual_information, expected_entropy, train_it_model
-from disentanglement.models.multi_head_models import uncertainty, \
+from disentanglement.models.gaussian_logits_models import uncertainty, \
     train_gaussian_logits_model
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE, FIGURE_FOLDER
 from disentanglement.util import normalise

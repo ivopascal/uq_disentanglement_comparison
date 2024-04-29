@@ -22,7 +22,9 @@ def main():
         else:
             plot_decreasing_dataset(name, conf)
             label_noise(name, conf)
-            plot_ood_class_detection(name, conf)
+
+            if name != "blobs":
+                plot_ood_class_detection(name, conf)
     end_time = datetime.now()
 
     print(f"Ran all experiments in {end_time - start_time}")

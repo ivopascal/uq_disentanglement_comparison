@@ -8,9 +8,9 @@ import numpy as np
 from tqdm import tqdm
 
 from disentanglement.data.datasets import get_datasets
-from disentanglement.models.entropy_models import train_entropy_model, expected_entropy, mutual_information
-from disentanglement.models.multi_head_models import train_disentangle_model, uncertainty
-from disentanglement.settings import NUM_SAMPLES, BATCH_SIZE, TEST_MODE
+from disentanglement.models.information_theoretic_models import train_it_model, expected_entropy, mutual_information
+from disentanglement.models.multi_head_models import train_gaussian_logits_model, uncertainty
+from disentanglement.settings import NUM_SAMPLES, BATCH_SIZE, TEST_MODE, FIGURE_FOLDER
 from disentanglement.util import normalise
 
 
@@ -27,6 +27,7 @@ def run_label_noise(dataset, architecture_func, epochs):
     noises = np.arange(0, 1.05, 0.05)
     if TEST_MODE:
         noises = np.arange(0, 1, 0.4)
+        epochs = 2
     n_classes = len(np.unique(y_train))
 
     disentangling_accuracies = []
@@ -41,9 +42,9 @@ def run_label_noise(dataset, architecture_func, epochs):
         X_noisy, y_noisy = partial_shuffle_dataset(X_train, y_train, percentage=noise)
         X_test_noisy, y_test_noisy = partial_shuffle_dataset(X_test, y_test, percentage=noise)
 
-        disentangle_model = train_disentangle_model(architecture_func, X_noisy, y_noisy, n_classes,
-                                                    epochs=epochs)
-        entropy_model = train_entropy_model(architecture_func, X_noisy, y_noisy, n_classes, epochs=epochs)
+        disentangle_model = train_gaussian_logits_model(architecture_func, X_noisy, y_noisy, n_classes,
+                                                        epochs=epochs)
+        entropy_model = train_it_model(architecture_func, X_noisy, y_noisy, n_classes, epochs=epochs)
 
         pred_mean, pred_ale_std, pred_epi_std = disentangle_model.predict(X_test_noisy, batch_size=BATCH_SIZE)
         entropy_preds = entropy_model.predict_samples(X_test_noisy, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
@@ -62,9 +63,9 @@ def label_noise(dataset_name, config):
     dataset, architectures, epochs = config
     fig, axes = plt.subplots(2, len(architectures), figsize=(10, 6), sharey=True, sharex=True)
 
-    for arch_idx, architecture_func in enumerate(architectures):
-        _, uq_name = architecture_func()
-        disentangling_accuracies, disentangling_aleatorics, disentangling_epistemics, entropy_accuracies, entropy_aleatorics, entropy_epistemics, noises = run_label_noise(dataset, architecture_func, epochs)
+    for arch_idx, architecture in enumerate(architectures):
+        uq_name = architecture.uq_name
+        disentangling_accuracies, disentangling_aleatorics, disentangling_epistemics, entropy_accuracies, entropy_aleatorics, entropy_epistemics, noises = run_label_noise(dataset, architecture.model_function, epochs)
 
         fig_acc, ax_acc = plt.subplots()
         ax_acc.plot(noises, disentangling_accuracies, label="Gaussian Logits")
@@ -73,13 +74,13 @@ def label_noise(dataset_name, config):
         ax_acc.set_xlabel("Labels shuffled")
         ax_acc.legend()
 
-        if not os.path.exists("../../figures/noise_dataset/"):
-            os.mkdir("../../figures/noise_dataset")
+        if not os.path.exists(f"{FIGURE_FOLDER}/noise_dataset/"):
+            os.mkdir(f"{FIGURE_FOLDER}/noise_dataset")
 
         if TEST_MODE:
-            fig_acc.savefig(f"../../figures/noise_datasets/accuracies_{uq_name}_{dataset_name}_TEST.pdf")
+            fig_acc.savefig(f"{FIGURE_FOLDER}/noise_datasets/accuracies_{uq_name}_{dataset_name}_TEST.pdf")
         else:
-            fig_acc.savefig(f"../../figures/noise_datasets/accuracies_{uq_name}_{dataset_name}.pdf")
+            fig_acc.savefig(f"{FIGURE_FOLDER}/noise_datasets/accuracies_{uq_name}_{dataset_name}.pdf")
 
         axes[0][arch_idx].plot(noises, normalise(disentangling_epistemics), label="Epistemic")
         axes[0][arch_idx].plot(noises, normalise(disentangling_aleatorics), label="Aleatoric")
@@ -104,9 +105,9 @@ def label_noise(dataset_name, config):
     fig.tight_layout()
 
     if TEST_MODE:
-        fig.savefig(f"../../figures/noise_datasets/disentangled_uncertainties_{dataset_name}_TEST.pdf")
+        fig.savefig(f"{FIGURE_FOLDER}/noise_datasets/disentangled_uncertainties_{dataset_name}_TEST.pdf")
     else:
-        fig.savefig(f"../../figures/noise_datasets/disentangled_uncertainties_{dataset_name}.pdf")
+        fig.savefig(f"{FIGURE_FOLDER}/noise_datasets/disentangled_uncertainties_{dataset_name}.pdf")
 
 
 if __name__ == "__main__":

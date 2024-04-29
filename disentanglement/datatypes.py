@@ -1,0 +1,27 @@
+from dataclasses import dataclass, field
+from typing import Union, Iterable, List, Callable
+
+import keras
+from keras_uncertainty.models import DeepEnsembleClassifier
+
+
+@dataclass
+class UqModel:
+    model_function: Callable
+    uq_name: str
+
+
+# This is used for plotting accuracy, aleatoric and epistemic uncertainty while changing a certain parameter.
+# For the decreasing dataset experiment, the changed parameter is different sizes of the training data.
+@dataclass
+class UncertaintyResults:
+    accuracies: List = field(default_factory=lambda: [])
+    aleatoric_uncertainties: List = field(default_factory=lambda: [])
+    epistemic_uncertainties: List = field(default_factory=lambda: [])
+    changed_parameter_values: List = field(default_factory=lambda: [])
+
+    def append_values(self, accuracy, aleatoric_uncertainty, epistemic_uncertainty, parameter):
+        self.accuracies.append(accuracy)
+        self.aleatoric_uncertainties.append(aleatoric_uncertainty)
+        self.epistemic_uncertainties.append(epistemic_uncertainty)
+        self.changed_parameter_values.append(parameter)

@@ -1,29 +1,33 @@
-from keras_uncertainty.models import StochasticClassifier, DeepEnsembleClassifier
+from typing import Union
+
+from keras_uncertainty.models import StochasticClassifier
 from keras.layers import Dense
 
 
 import numpy as np
 
+from disentanglement.models.architectures import CustomDeepEnsembleClassifier
 from disentanglement.settings import BATCH_SIZE, TEST_MODE
 
 
-def predictive_entropy(probs, axis=-1, eps=1e-6):
+def predictive_entropy(probs, axis=-1, eps=1e-6) -> np.ndarray:
     probs = np.mean(probs, axis=0)
     return -np.sum(probs * np.log(probs + eps), axis=axis)
 
 
-def expected_entropy(probs, eps=1e-6):
+def expected_entropy(probs, eps=1e-6)-> np.ndarray:
     return -np.mean((probs * np.log(probs + eps)).sum(axis=-1), axis=0)
 
 
-def mutual_information(probs):
+def mutual_information(probs) -> np.ndarray:
     return predictive_entropy(probs) - expected_entropy(probs)
 
 
-def train_entropy_model(model_creator, x_train, y_train, n_classes, epochs):
-    model, _ = model_creator()
+def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
+        -> Union[CustomDeepEnsembleClassifier, StochasticClassifier]:
+    model = model_creator()
 
-    if isinstance(model, DeepEnsembleClassifier):
+    if isinstance(model, CustomDeepEnsembleClassifier):
         for estimator in model.train_estimators:
             estimator.add(Dense(n_classes, activation="softmax"))
             estimator.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])

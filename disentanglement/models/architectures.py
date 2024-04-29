@@ -4,6 +4,9 @@ from keras.src.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 from keras_uncertainty.layers import StochasticDropout, DropConnectDense
 from keras_uncertainty.models import DeepEnsembleClassifier
 
+from disentanglement.datatypes import UqModel
+from disentanglement.settings import NUM_DEEP_ENSEMBLE_ESTIMATORS
+
 
 class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
     def __init__(self, model_fn, num_estimators):
@@ -23,7 +26,7 @@ def get_blobs_dropout_architecture(prob=0.5):
     model.add(Dense(32, activation="relu"))
     model.add(StochasticDropout(prob))
 
-    return model, "MC-Dropout"
+    return model
 
 
 def get_blobs_ensemble_architecture(prob=0.5):
@@ -38,8 +41,8 @@ def get_blobs_ensemble_architecture(prob=0.5):
 
         return model
 
-    model = CustomDeepEnsembleClassifier(model_fn, num_estimators=5)
-    return model, "Deep Ensemble"
+    ensemble_model = CustomDeepEnsembleClassifier(model_fn, num_estimators=NUM_DEEP_ENSEMBLE_ESTIMATORS)
+    return ensemble_model
 
 
 def get_cifar10_ensemble_architecture(prob=0.3):
@@ -59,8 +62,8 @@ def get_cifar10_ensemble_architecture(prob=0.3):
 
         return model
 
-    model = CustomDeepEnsembleClassifier(model_fn, num_estimators=5)
-    return model, "Deep Ensemble"
+    ensemble_model = CustomDeepEnsembleClassifier(model_fn, num_estimators=NUM_DEEP_ENSEMBLE_ESTIMATORS)
+    return ensemble_model
 
 
 def get_blobs_dropconnect_architecture(prob=0.5):
@@ -68,7 +71,7 @@ def get_blobs_dropconnect_architecture(prob=0.5):
     model.add(DropConnectDense(32, activation="relu", input_shape=(2,), prob=prob))
     model.add(DropConnectDense(32, activation="relu", prob=prob))
 
-    return model, "MC-DropConnect"
+    return model
 
 
 def get_cifar10_dropout_architecture(prob=0.3):
@@ -83,7 +86,7 @@ def get_cifar10_dropout_architecture(prob=0.3):
     model.add(Dense(64, activation='relu'))
     model.add(StochasticDropout(prob))
 
-    return model, "MC-Dropout"
+    return model
 
 
 def get_cifar10_dropconnect_architecture(prob=0.3):
@@ -97,4 +100,4 @@ def get_cifar10_dropconnect_architecture(prob=0.3):
     model.add(Flatten())
     model.add(DropConnectDense(64, activation='relu', prob=prob))
 
-    return model, "MC-DropConnect"
+    return model

@@ -4,10 +4,10 @@ from typing import List
 
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.metrics import roc_curve
 from tqdm import tqdm
 
-from disentanglement.data.datasets import get_datasets
+from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.models.information_theoretic_models import train_it_model, expected_entropy, mutual_information
 from disentanglement.models.gaussian_logits_models import train_gaussian_logits_model, uncertainty
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE, FIGURE_FOLDER
@@ -21,11 +21,9 @@ def determine_tprs_for_roc(base_fpr, y_ood_true, y_ood_score):
 
 
 def run_ood_class_detection(dataset, architecture_func, epochs) -> List[np.ndarray]:
-    X_train, y_train, X_test, y_test = dataset
-
-    ood_classes = np.unique(y_train)
-    n_classes = len(np.unique(y_train))
-    y_test = y_test.reshape(-1)
+    ood_classes = np.unique(dataset.y_train)
+    n_classes = len(np.unique(dataset.y_train))
+    y_test = dataset.y_test.reshape(-1)
     base_fpr = np.linspace(0, 1, 101)
 
     if TEST_MODE:
@@ -37,25 +35,26 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> List[np.ndarr
     ale_it_tprs = []
     epi_it_tprs = []
     for ood_class in tqdm(ood_classes):
-        X_train_id = X_train[y_train[:, 0] != ood_class]
-        y_train_id = y_train[y_train != ood_class]
+        X_train_id = dataset.X_train[dataset.y_train[:, 0] != ood_class]
+        y_train_id = dataset.y_train[dataset.y_train != ood_class]
         y_test_ood = y_test == ood_class
 
         it_model = train_it_model(architecture_func, X_train_id, y_train_id, n_classes, epochs=epochs)
-        it_preds = it_model.predict_samples(X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
+        it_preds = it_model.predict_samples(dataset.X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
         ale_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, expected_entropy(it_preds)))
         epi_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, mutual_information(it_preds)))
 
         gaussian_logits_model = train_gaussian_logits_model(architecture_func, X_train_id, y_train_id,
                                                             n_classes, epochs=epochs)
-        pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(X_test, batch_size=BATCH_SIZE)
+        pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE)
 
         ale_gaussian_logits = uncertainty(pred_ale_std)
         epi_gaussian_logits = uncertainty(pred_epi_std)
         ale_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, ale_gaussian_logits))
         epi_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, epi_gaussian_logits))
 
-    return [np.array(tprs).mean(axis=0) for tprs in [ale_gaussian_logit_tprs, epi_gaussian_logit_tprs, ale_it_tprs, epi_it_tprs]] + [base_fpr]
+    return [np.array(tprs).mean(axis=0) for tprs in [ale_gaussian_logit_tprs, epi_gaussian_logit_tprs,
+                                                     ale_it_tprs, epi_it_tprs]] + [base_fpr]
 
 
 def plot_roc_on_ax(ax, aleatoric_tpr, epistemic_tpr, base_fpr):
@@ -64,15 +63,15 @@ def plot_roc_on_ax(ax, aleatoric_tpr, epistemic_tpr, base_fpr):
     ax.plot(base_fpr, base_fpr, color='black', linestyle='dashed')
 
 
-def plot_ood_class_detection(dataset_name, config):
-    dataset, architectures, epochs = config
-
+def plot_ood_class_detection(experiment_config):
     if not os.path.exists(f"{FIGURE_FOLDER}/ood_class/"):
         os.mkdir(f"{FIGURE_FOLDER}/ood_class/")
 
-    fig, axes = plt.subplots(2, len(architectures), figsize=(10, 6), sharey=True, sharex=True)
-    for arch_idx, architecture in enumerate(architectures):
-        ale_gl_tpr, epi_gl_tpr, ale_it_tpr, epi_it_tpr, base_fpr = run_ood_class_detection(dataset, architecture.model_function, epochs)
+    fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
+    for arch_idx, architecture in enumerate(experiment_config.models):
+        ale_gl_tpr, epi_gl_tpr, ale_it_tpr, epi_it_tpr, base_fpr = run_ood_class_detection(experiment_config.dataset,
+                                                                                           architecture.model_function,
+                                                                                           experiment_config.epochs)
 
         plot_roc_on_ax(axes[0][arch_idx], ale_gl_tpr, epi_gl_tpr, base_fpr)
         plot_roc_on_ax(axes[1][arch_idx], ale_it_tpr, epi_it_tpr, base_fpr)
@@ -84,19 +83,23 @@ def plot_ood_class_detection(dataset_name, config):
             axes[0][arch_idx].set_ylabel("Gaussian Logits\nTrue Positive Rate")
             axes[1][arch_idx].set_ylabel("Information Theoretic\nTrue Positive Rate")
 
-        if arch_idx == len(architectures) - 1:
+        if arch_idx == len(experiment_config.models) - 1:
             axes[0][arch_idx].legend(loc="lower right")
 
-    fig.suptitle(f"ROC curves for OOD detection for {dataset_name}", fontsize=20)
+    fig.suptitle(f"ROC curves for OOD detection for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()
 
     if TEST_MODE:
-        fig.savefig(f"{FIGURE_FOLDER}/ood_class/ood_roc_curve_{dataset_name}_TEST.pdf")
+        fig.savefig(f"{FIGURE_FOLDER}/ood_class/ood_roc_curve_{experiment_config.dataset_name}_TEST.pdf")
     else:
-        fig.savefig(f"{FIGURE_FOLDER}/ood_class/ood_roc_curve_{dataset_name}.pdf")
+        fig.savefig(f"{FIGURE_FOLDER}/ood_class/ood_roc_curve_{experiment_config.dataset_name}.pdf")
 
 
 if __name__ == "__main__":
     start_time = datetime.now()
-    plot_ood_class_detection("CIFAR10", get_datasets()["CIFAR10"])
+
+    experiment_configs = get_experiment_configs()
+    for experiment_conf in experiment_configs:
+        if experiment_conf.dataset_name == "CIFAR10":
+            plot_ood_class_detection(experiment_conf)
     print(f"Running Decreasing Dataset experiments took: {datetime.now() - start_time}")

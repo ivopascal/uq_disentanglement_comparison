@@ -6,19 +6,17 @@ from matplotlib import pyplot as plt
 from sklearn.utils import shuffle
 from tqdm import tqdm
 
-from disentanglement.data.datasets import get_datasets
-from disentanglement.datatypes import UncertaintyResults
+from disentanglement.experiment_configs import get_experiment_configs
+from disentanglement.datatypes import UncertaintyResults, Dataset
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
 from disentanglement.util import normalise
 
 
-def run_decreasing_dataset(dataset, model_function, epochs):
+def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
     gl_results = UncertaintyResults()
     it_results = UncertaintyResults()
-
-    X_train, y_train, X_test, y_test = dataset
 
     num_dataset_sizes = 20
     if TEST_MODE:
@@ -27,7 +25,7 @@ def run_decreasing_dataset(dataset, model_function, epochs):
 
     dataset_sizes = np.logspace(start=0.0, stop=1, base=2, num=num_dataset_sizes) - 1
 
-    X_train, y_train = shuffle(X_train, y_train)
+    X_train, y_train = shuffle(dataset.X_train, dataset.y_train)
     for dataset_size in tqdm(dataset_sizes):
         X_train_subs = []
         y_train_subs = []
@@ -41,7 +39,7 @@ def run_decreasing_dataset(dataset, model_function, epochs):
         X_train_sub = np.concatenate(X_train_subs)
         y_train_sub = np.concatenate(y_train_subs)
         X_train_sub, y_train_sub = shuffle(X_train_sub, y_train_sub)
-        small_dataset = X_train_sub, y_train_sub, X_test, y_test
+        small_dataset = Dataset(X_train_sub, y_train_sub, dataset.X_test, dataset.y_test)
 
         gl_results.append_values(*get_average_uncertainty_gaussian_logits(small_dataset, model_function, epochs),
                                  dataset_size)
@@ -69,20 +67,18 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
     return accuracy_axes
 
 
-def plot_decreasing_dataset(dataset_name, config):
-    dataset, architectures, epochs = config
-
-    fig, axes = plt.subplots(2, len(architectures), figsize=(10, 6), sharey=True, sharex=True)
+def plot_decreasing_dataset(experiment_config):
+    fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
     accuracy_y_ax_to_share = None
-    for arch_idx, architecture in enumerate(architectures):
+    for arch_idx, architecture in enumerate(experiment_config.models):
         gaussian_logits_results, it_results = run_decreasing_dataset(
-            dataset, architecture.model_function, epochs)
+            experiment_config.dataset, architecture.model_function, experiment_config.epochs)
 
         if not os.path.exists(f"{FIGURE_FOLDER}/decreasing_dataset/"):
             os.mkdir(f"{FIGURE_FOLDER}/decreasing_dataset/")
 
         is_first_column = arch_idx == 0
-        is_final_column = arch_idx == len(architectures) - 1
+        is_final_column = arch_idx == len(experiment_config.models) - 1
 
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
                                                           accuracy_y_ax_to_share, is_final_column)
@@ -99,20 +95,21 @@ def plot_decreasing_dataset(dataset_name, config):
         if is_final_column:
             axes[0][arch_idx].legend()
 
-    fig.suptitle(f"Disentangled uncertainty over decreasing dataset sizes for {dataset_name}", fontsize=20)
+    fig.suptitle(f"Disentangled uncertainty over decreasing dataset sizes for {experiment_config.dataset_name}",
+                 fontsize=20)
     fig.tight_layout()
 
     if TEST_MODE:
-        fig.savefig(f"{FIGURE_FOLDER}/decreasing_dataset/disentangled_uncertainties_{dataset_name}_TEST.pdf")
+        fig.savefig(f"{FIGURE_FOLDER}/decreasing_dataset/decreasing_dataset_{experiment_config.dataset_name}_TEST.pdf")
     else:
-        fig.savefig(f"{FIGURE_FOLDER}/decreasing_dataset/disentangled_uncertainties_{dataset_name}.pdf")
+        fig.savefig(f"{FIGURE_FOLDER}/decreasing_dataset/decreasing_dataset_{experiment_config.dataset_name}.pdf")
 
 
 if __name__ == "__main__":
     start_time = datetime.now()
-
-    for name, conf in get_datasets().items():
-        if name == "blobs":
-            plot_decreasing_dataset(name, conf)
+    experiment_configs = get_experiment_configs()
+    for experiment_conf in experiment_configs:
+        if experiment_conf.dataset_name == "blobs":
+            plot_decreasing_dataset(experiment_conf)
 
     print(f"Running Decreasing Dataset experiments took: {datetime.now() - start_time}")

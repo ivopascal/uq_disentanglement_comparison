@@ -6,6 +6,7 @@ from keras.layers import Dense, Input
 from keras_uncertainty.utils import numpy_entropy
 from sklearn.metrics import accuracy_score
 
+from disentanglement.datatypes import Dataset
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE
 
 
@@ -53,11 +54,10 @@ def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes
     return fin_model
 
 
-def get_average_uncertainty_gaussian_logits(dataset, architecture_func, epochs):
-    X_train, y_train, X_test, y_test = dataset
-    n_classes = len(np.unique(y_train))
-    gaussian_logits_model = train_gaussian_logits_model(architecture_func, X_train, y_train, n_classes,
+def get_average_uncertainty_gaussian_logits(dataset: Dataset, architecture_func, epochs):
+    n_classes = len(np.unique(dataset.y_train))
+    gaussian_logits_model = train_gaussian_logits_model(architecture_func, dataset.X_train, dataset.y_train, n_classes,
                                                         epochs=epochs)
-    pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(X_test, batch_size=BATCH_SIZE)
+    pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE)
 
-    return accuracy_score(y_test, pred_mean.argmax(axis=1)), uncertainty(pred_ale_std).mean(), uncertainty(pred_epi_std).mean()
+    return accuracy_score(dataset.y_test, pred_mean.argmax(axis=1)), uncertainty(pred_ale_std).mean(), uncertainty(pred_epi_std).mean()

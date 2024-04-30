@@ -3,6 +3,7 @@ from datetime import datetime
 
 import numpy as np
 from matplotlib import pyplot as plt
+from sklearn.utils import shuffle
 from tqdm import tqdm
 
 from disentanglement.data.datasets import get_datasets
@@ -18,17 +19,28 @@ def run_decreasing_dataset(dataset, model_function, epochs):
     it_results = UncertaintyResults()
 
     X_train, y_train, X_test, y_test = dataset
-    max_train_samples = y_train.shape[0]
 
     num_dataset_sizes = 20
     if TEST_MODE:
         num_dataset_sizes = 3
         epochs = 2
 
-    dataset_sizes = np.logspace(start=1, stop=np.log2(max_train_samples), base=2, num=num_dataset_sizes)
+    dataset_sizes = np.logspace(start=0.01, stop=1, base=2, num=num_dataset_sizes) - 1
 
+    X_train, y_train = shuffle(X_train, y_train)
     for dataset_size in tqdm(dataset_sizes):
-        X_train_sub, y_train_sub = X_train[:int(dataset_size)], y_train[:int(dataset_size)]
+        X_train_subs = []
+        y_train_subs = []
+        for y_value in np.unique(y_train):
+            n_samples_per_class = int((y_train == y_value).sum() * dataset_size)
+            if n_samples_per_class == 0:
+                n_samples_per_class = 1
+            X_train_subs.append(X_train[y_train == y_value][:n_samples_per_class])
+            y_train_subs.append(y_train[y_train == y_value][:n_samples_per_class])
+
+        X_train_sub = np.concatenate(X_train_subs)
+        y_train_sub = np.concatenate(y_train_subs)
+        X_train_sub, y_train_sub = shuffle(X_train_sub, y_train_sub)
         small_dataset = X_train_sub, y_train_sub, X_test, y_test
 
         gl_results.append_values(*get_average_uncertainty_gaussian_logits(small_dataset, model_function, epochs),

@@ -25,7 +25,7 @@ def run_decreasing_dataset(dataset, model_function, epochs):
         num_dataset_sizes = 3
         epochs = 2
 
-    dataset_sizes = np.logspace(start=0.01, stop=1, base=2, num=num_dataset_sizes) - 1
+    dataset_sizes = np.logspace(start=0.0, stop=1, base=2, num=num_dataset_sizes) - 1
 
     X_train, y_train = shuffle(X_train, y_train)
     for dataset_size in tqdm(dataset_sizes):

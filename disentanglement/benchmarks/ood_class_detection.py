@@ -71,7 +71,7 @@ def plot_ood_class_detection(experiment_config):
     for arch_idx, architecture in enumerate(experiment_config.models):
         ale_gl_tpr, epi_gl_tpr, ale_it_tpr, epi_it_tpr, base_fpr = run_ood_class_detection(experiment_config.dataset,
                                                                                            architecture.model_function,
-                                                                                           experiment_config.epochs)
+                                                                                           architecture.epochs)
 
         plot_roc_on_ax(axes[0][arch_idx], ale_gl_tpr, epi_gl_tpr, base_fpr)
         plot_roc_on_ax(axes[1][arch_idx], ale_it_tpr, epi_it_tpr, base_fpr)

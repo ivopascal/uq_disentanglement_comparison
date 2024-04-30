@@ -32,7 +32,7 @@ def two_head_model(trunk_model, num_classes=2, num_samples=100):
 
 
 def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes, epochs) -> DisentangledStochasticClassifier:
-    trunk_model = trunk_model_creator()
+    trunk_model = trunk_model_creator(n_training_samples=x_train.shape[0])
 
     if isinstance(trunk_model, DeepEnsembleClassifier):
         for i, estimator in enumerate(trunk_model.train_estimators):

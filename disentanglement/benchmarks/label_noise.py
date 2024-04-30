@@ -25,7 +25,6 @@ def run_label_noise(dataset: Dataset, architecture_func, epochs):
     gl_results = UncertaintyResults()
     it_results = UncertaintyResults()
 
-
     noises = np.arange(0, 1.05, 0.05)
 
     if TEST_MODE:
@@ -50,9 +49,7 @@ def label_noise(experiment_config: ExperimentConfig):
     accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
         gaussian_logits_results, it_results = run_label_noise(experiment_config.dataset,
-                                                              architecture.model_function,
-                                                              experiment_config.epochs)
-
+                                                              architecture.model_function, architecture.epochs)
         if not os.path.exists(f"{FIGURE_FOLDER}/noise_dataset/"):
             os.mkdir(f"{FIGURE_FOLDER}/noise_dataset")
 

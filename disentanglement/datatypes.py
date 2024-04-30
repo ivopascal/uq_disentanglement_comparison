@@ -8,6 +8,7 @@ import numpy as np
 class UqModel:
     model_function: Callable
     uq_name: str
+    epochs: int
 
 
 # This is used for plotting accuracy, aleatoric and epistemic uncertainty while changing a certain parameter.
@@ -38,4 +39,3 @@ class ExperimentConfig:
     dataset_name: str
     dataset: Dataset
     models: List[UqModel]
-    epochs: int

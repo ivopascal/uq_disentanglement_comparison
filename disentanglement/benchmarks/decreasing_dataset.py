@@ -72,7 +72,7 @@ def plot_decreasing_dataset(experiment_config):
     accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
         gaussian_logits_results, it_results = run_decreasing_dataset(
-            experiment_config.dataset, architecture.model_function, experiment_config.epochs)
+            experiment_config.dataset, architecture.model_function, architecture.epochs)
 
         if not os.path.exists(f"{FIGURE_FOLDER}/decreasing_dataset/"):
             os.mkdir(f"{FIGURE_FOLDER}/decreasing_dataset/")

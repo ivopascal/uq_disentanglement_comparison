@@ -4,7 +4,6 @@ from keras.src.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 from keras_uncertainty.layers import StochasticDropout, DropConnectDense
 from keras_uncertainty.models import DeepEnsembleClassifier
 
-from disentanglement.datatypes import UqModel
 from disentanglement.settings import NUM_DEEP_ENSEMBLE_ESTIMATORS
 
 
@@ -45,16 +44,21 @@ def get_blobs_ensemble_architecture(prob=0.5):
     return ensemble_model
 
 
+def get_cifar10_convolutional_blocks():
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(Flatten())
+
+    return model
+
+
 def get_cifar10_ensemble_architecture(prob=0.3):
     def model_fn():
-        model = Sequential()
-        model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
-        model.add(MaxPooling2D((2, 2)))
-        model.add(Conv2D(64, (3, 3), activation='relu'))
-        model.add(MaxPooling2D((2, 2)))
-        model.add(Conv2D(64, (3, 3), activation='relu'))
-
-        model.add(Flatten())
+        model = get_cifar10_convolutional_blocks()
         model.add(Dense(64, activation='relu'))
         model.add(Dropout(prob))
 
@@ -75,14 +79,7 @@ def get_blobs_dropconnect_architecture(prob=0.5):
 
 
 def get_cifar10_dropout_architecture(prob=0.3):
-    model = Sequential()
-    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-
-    model.add(Flatten())
+    model = get_cifar10_convolutional_blocks()
     model.add(Dense(64, activation='relu'))
     model.add(StochasticDropout(prob))
 
@@ -90,14 +87,7 @@ def get_cifar10_dropout_architecture(prob=0.3):
 
 
 def get_cifar10_dropconnect_architecture(prob=0.3):
-    model = Sequential()
-    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-
-    model.add(Flatten())
+    model = get_cifar10_convolutional_blocks()
     model.add(DropConnectDense(64, activation='relu', prob=prob))
 
     return model

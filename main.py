@@ -5,26 +5,27 @@ from tqdm import tqdm
 from disentanglement.benchmarks.decreasing_dataset import plot_decreasing_dataset
 from disentanglement.benchmarks.label_noise import label_noise
 from disentanglement.benchmarks.ood_class_detection import plot_ood_class_detection
-from disentanglement.data.datasets import get_datasets
+from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.settings import TEST_MODE
 
 
 def main():
     start_time = datetime.now()
-    for name, conf in tqdm(get_datasets().items()):
+    experiment_configs = get_experiment_configs()
+    for experiment_config in tqdm(experiment_configs):
         if TEST_MODE:
-            if name == "blobs":
-                plot_decreasing_dataset(name, conf)
-                label_noise(name, conf)
-            if name == "CIFAR10":
-                plot_ood_class_detection(name, conf)
+            if experiment_config.dataset_name == "blobs":
+                plot_decreasing_dataset(experiment_config)
+                label_noise(experiment_config)
+            if experiment_config.dataset_name == "CIFAR10":
+                plot_ood_class_detection(experiment_config)
 
         else:
-            plot_decreasing_dataset(name, conf)
-            label_noise(name, conf)
+            plot_decreasing_dataset(experiment_config)
+            label_noise(experiment_config)
 
-            if name != "blobs":
-                plot_ood_class_detection(name, conf)
+            if experiment_config.dataset_name != "blobs":
+                plot_ood_class_detection(experiment_config)
     end_time = datetime.now()
 
     print(f"Ran all experiments in {end_time - start_time}")

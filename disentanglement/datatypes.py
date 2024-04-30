@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Union, Iterable, List, Callable
+from typing import List, Callable, Tuple
 
-import keras
-from keras_uncertainty.models import DeepEnsembleClassifier
+import numpy as np
 
 
 @dataclass
@@ -25,3 +24,18 @@ class UncertaintyResults:
         self.aleatoric_uncertainties.append(aleatoric_uncertainty)
         self.epistemic_uncertainties.append(epistemic_uncertainty)
         self.changed_parameter_values.append(parameter)
+
+@dataclass
+class Dataset:
+    X_train: np.ndarray
+    y_train: np.ndarray
+    X_test: np.ndarray
+    y_test: np.ndarray
+
+
+@dataclass
+class ExperimentConfig:
+    dataset_name: str
+    dataset: Dataset
+    models: List[UqModel]
+    epochs: int

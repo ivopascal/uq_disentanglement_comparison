@@ -1,16 +1,20 @@
 import os
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve
 from tqdm import tqdm
 
+from disentanglement.datatypes import UncertaintyResults
 from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.models.information_theoretic_models import train_it_model, expected_entropy, mutual_information
 from disentanglement.models.gaussian_logits_models import train_gaussian_logits_model, uncertainty
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE, FIGURE_FOLDER
+from disentanglement.util import load_results_from_file, save_results_to_file
+
+META_EXPERIMENT_NAME = "ood_class"
 
 
 def determine_tprs_for_roc(base_fpr, y_ood_true, y_ood_score):
@@ -20,7 +24,7 @@ def determine_tprs_for_roc(base_fpr, y_ood_true, y_ood_score):
     return tpr
 
 
-def run_ood_class_detection(dataset, architecture_func, epochs) -> List[np.ndarray]:
+def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[UncertaintyResults, UncertaintyResults]:
     ood_classes = np.unique(dataset.y_train)
     n_classes = len(np.unique(dataset.y_train))
     y_test = dataset.y_test.reshape(-1)
@@ -53,8 +57,19 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> List[np.ndarr
         ale_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, ale_gaussian_logits))
         epi_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, epi_gaussian_logits))
 
-    return [np.array(tprs).mean(axis=0) for tprs in [ale_gaussian_logit_tprs, epi_gaussian_logit_tprs,
-                                                     ale_it_tprs, epi_it_tprs]] + [base_fpr]
+    gl_results = UncertaintyResults(accuracies=np.empty_like(base_fpr),
+                                    aleatoric_uncertainties=np.array(ale_gaussian_logit_tprs).mean(axis=0),
+                                    epistemic_uncertainties=np.array(epi_gaussian_logit_tprs).mean(axis=0),
+                                    changed_parameter_values=base_fpr
+                                    )
+
+    it_results = UncertaintyResults(accuracies=np.empty_like(base_fpr),
+                                    aleatoric_uncertainties=np.array(ale_it_tprs).mean(axis=0),
+                                    epistemic_uncertainties=np.array(epi_it_tprs).mean(axis=0),
+                                    changed_parameter_values=base_fpr
+                                    )
+
+    return gl_results, it_results
 
 
 def plot_roc_on_ax(ax, aleatoric_tpr, epistemic_tpr, base_fpr):
@@ -63,18 +78,27 @@ def plot_roc_on_ax(ax, aleatoric_tpr, epistemic_tpr, base_fpr):
     ax.plot(base_fpr, base_fpr, color='black', linestyle='dashed')
 
 
-def plot_ood_class_detection(experiment_config):
+def plot_ood_class_detection(experiment_config, from_folder=None):
     if not os.path.exists(f"{FIGURE_FOLDER}/ood_class/"):
         os.mkdir(f"{FIGURE_FOLDER}/ood_class/")
 
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
     for arch_idx, architecture in enumerate(experiment_config.models):
-        ale_gl_tpr, epi_gl_tpr, ale_it_tpr, epi_it_tpr, base_fpr = run_ood_class_detection(experiment_config.dataset,
-                                                                                           architecture.model_function,
-                                                                                           architecture.epochs)
+        if from_folder:
+            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                                                                         meta_experiment_name=META_EXPERIMENT_NAME)
+        else:
+            gaussian_logits_results, it_results = run_ood_class_detection(experiment_config.dataset,
+                                                                          architecture.model_function,
+                                                                          architecture.epochs)
+            save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
+                                 meta_experiment_name=META_EXPERIMENT_NAME)
 
-        plot_roc_on_ax(axes[0][arch_idx], ale_gl_tpr, epi_gl_tpr, base_fpr)
-        plot_roc_on_ax(axes[1][arch_idx], ale_it_tpr, epi_it_tpr, base_fpr)
+        plot_roc_on_ax(axes[0][arch_idx], gaussian_logits_results.aleatoric_uncertainties,
+                       gaussian_logits_results.epistemic_uncertainties,
+                       gaussian_logits_results.changed_parameter_values)
+        plot_roc_on_ax(axes[1][arch_idx], it_results.aleatoric_uncertainties, it_results.epistemic_uncertainties,
+                       it_results.changed_parameter_values)
 
         axes[0][arch_idx].set_title(architecture.uq_name)
         axes[1][arch_idx].set_xlabel("False Positive Rate")

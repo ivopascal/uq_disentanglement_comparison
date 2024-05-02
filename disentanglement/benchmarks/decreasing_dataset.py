@@ -6,12 +6,14 @@ from matplotlib import pyplot as plt
 from sklearn.utils import shuffle
 from tqdm import tqdm
 
-from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.datatypes import UncertaintyResults, Dataset
+from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
-from disentanglement.util import normalise
+from disentanglement.util import normalise, load_results_from_file, save_results_to_file
+
+META_EXPERIMENT_NAME = "decreasing_dataset"
 
 
 def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
@@ -67,15 +69,25 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
     return accuracy_axes
 
 
-def plot_decreasing_dataset(experiment_config):
+def plot_decreasing_dataset(experiment_config, from_folder=False):
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
     accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
-        gaussian_logits_results, it_results = run_decreasing_dataset(
-            experiment_config.dataset, architecture.model_function, architecture.epochs)
+        if from_folder:
+            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                                                                         meta_experiment_name=META_EXPERIMENT_NAME)
+        else:
+            gaussian_logits_results, it_results = run_decreasing_dataset(
+                experiment_config.dataset, architecture.model_function, architecture.epochs)
+            save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
+                                 meta_experiment_name=META_EXPERIMENT_NAME)
 
-        if not os.path.exists(f"{FIGURE_FOLDER}/decreasing_dataset/"):
-            os.mkdir(f"{FIGURE_FOLDER}/decreasing_dataset/")
+        if TEST_MODE:  # Check if it's possible to load data from disk
+            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                                                                         meta_experiment_name=META_EXPERIMENT_NAME)
+
+        if not os.path.exists(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/"):
+            os.mkdir(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/")
 
         is_first_column = arch_idx == 0
         is_final_column = arch_idx == len(experiment_config.models) - 1
@@ -100,9 +112,11 @@ def plot_decreasing_dataset(experiment_config):
     fig.tight_layout()
 
     if TEST_MODE:
-        fig.savefig(f"{FIGURE_FOLDER}/decreasing_dataset/decreasing_dataset_{experiment_config.dataset_name}_TEST.pdf")
+        fig.savefig(
+            f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/{META_EXPERIMENT_NAME}_{experiment_config.dataset_name}_TEST.pdf")
     else:
-        fig.savefig(f"{FIGURE_FOLDER}/decreasing_dataset/decreasing_dataset_{experiment_config.dataset_name}.pdf")
+        fig.savefig(
+            f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/{META_EXPERIMENT_NAME}_{experiment_config.dataset_name}.pdf")
 
 
 if __name__ == "__main__":
@@ -110,6 +124,6 @@ if __name__ == "__main__":
     experiment_configs = get_experiment_configs()
     for experiment_conf in experiment_configs:
         if experiment_conf.dataset_name == "blobs":
-            plot_decreasing_dataset(experiment_conf)
+            plot_decreasing_dataset(experiment_conf, from_folder=False)
 
     print(f"Running Decreasing Dataset experiments took: {datetime.now() - start_time}")

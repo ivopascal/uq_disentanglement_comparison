@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 
 from disentanglement.datatypes import Dataset
+from disentanglement.logging import TQDM
 from disentanglement.models.architectures import CustomDeepEnsembleClassifier
 from disentanglement.settings import BATCH_SIZE, TEST_MODE, NUM_SAMPLES
 
@@ -35,6 +36,7 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
             estimator.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
         csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
         model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=0, callbacks=[csv_logger])
+        TQDM.update(1)
         return model
 
     model.add(Dense(n_classes, activation="softmax"))
@@ -47,6 +49,7 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
     csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
     model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=0, callbacks=[csv_logger])
     mc_model = StochasticClassifier(model)
+    TQDM.update(1)
 
     return mc_model
 

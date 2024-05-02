@@ -8,7 +8,6 @@ from disentanglement.benchmarks.decreasing_dataset import plot_decreasing_datase
 from disentanglement.benchmarks.label_noise import label_noise
 from disentanglement.benchmarks.ood_class_detection import plot_ood_class_detection
 from disentanglement.experiment_configs import get_experiment_configs
-from disentanglement.settings import TEST_MODE
 import tensorflow as tf
 import warnings
 warnings.filterwarnings("ignore")
@@ -24,19 +23,13 @@ def main():
     if not os.path.exists('./figures'):
         os.mkdir('./figures')
     for experiment_config in experiment_configs:
-        if TEST_MODE:
-            if experiment_config.dataset_name == "blobs":
-                plot_decreasing_dataset(experiment_config, from_folder)
-                label_noise(experiment_config, from_folder)
-            if experiment_config.dataset_name == "CIFAR10":
-                plot_ood_class_detection(experiment_config, from_folder)
-
-        else:
+        if "decreasing_dataset" in experiment_config.meta_experiments:
             plot_decreasing_dataset(experiment_config, from_folder)
+        if "label_noise" in experiment_config.meta_experiments:
             label_noise(experiment_config, from_folder)
+        if "ood_class" in experiment_config.meta_experiments:
+            plot_ood_class_detection(experiment_config, from_folder)
 
-            if experiment_config.dataset_name != "blobs":
-                plot_ood_class_detection(experiment_config, from_folder)
     end_time = datetime.now()
 
     print(f"Ran all experiments in {end_time - start_time}")

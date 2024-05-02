@@ -16,6 +16,7 @@ def get_experiment_configs() -> List[ExperimentConfig]:
                 UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
                 UqModel(get_cifar10_dropout_architecture, "MC-Dropout", epochs=100),
                 UqModel(get_cifar10_dropconnect_architecture, "MC-DropConnect", epochs=100)],
+        meta_experiments=["ood_class"],
     ),
         ExperimentConfig(
             dataset_name="blobs",
@@ -24,6 +25,7 @@ def get_experiment_configs() -> List[ExperimentConfig]:
                     UqModel(get_blobs_ensemble_architecture, "Deep Ensemble", epochs=50),
                     UqModel(get_blobs_dropout_architecture, "MC-Dropout", epochs=50),
                     UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=50)],
+            meta_experiments=["decreasing_dataset", "label_noise"]
         )
     ]
 

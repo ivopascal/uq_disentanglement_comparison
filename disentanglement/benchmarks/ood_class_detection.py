@@ -112,9 +112,6 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
         if arch_idx == len(experiment_config.models) - 1:
             axes[0][arch_idx].legend(loc="lower right")
 
-        TQDM.update(1)
-
-
     fig.suptitle(f"ROC curves for OOD detection for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()
 

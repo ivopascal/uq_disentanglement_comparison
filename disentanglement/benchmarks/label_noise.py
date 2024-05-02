@@ -10,7 +10,7 @@ from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.datatypes import UncertaintyResults, ExperimentConfig, Dataset
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
-from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
+from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_DECREASING_DATASET_STEPS, NUM_LABEL_NOISE_STEPS
 from disentanglement.logging import TQDM
 from disentanglement.util import load_results_from_file, save_results_to_file
 
@@ -28,10 +28,9 @@ def run_label_noise(dataset: Dataset, architecture_func, epochs):
     gl_results = UncertaintyResults()
     it_results = UncertaintyResults()
 
-    noises = np.arange(0, 1.05, 0.05)
+    noises = np.linspace(0, 1.0, NUM_LABEL_NOISE_STEPS)
 
     if TEST_MODE:
-        noises = np.arange(0, 1, 0.4)
         epochs = 2
 
     for noise in noises:
@@ -79,8 +78,6 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
 
         if is_final_column:
             axes[0][arch_idx].legend()
-
-        TQDM.update(1)
 
     fig.suptitle(f"Disentangled uncertainty over shuffled labels for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()

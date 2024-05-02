@@ -9,7 +9,7 @@ from disentanglement.datatypes import UncertaintyResults, Dataset
 from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
-from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
+from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_DECREASING_DATASET_STEPS
 from disentanglement.logging import TQDM
 from disentanglement.util import normalise, load_results_from_file, save_results_to_file
 
@@ -20,12 +20,10 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
     gl_results = UncertaintyResults()
     it_results = UncertaintyResults()
 
-    num_dataset_sizes = 20
     if TEST_MODE:
-        num_dataset_sizes = 3
         epochs = 2
 
-    dataset_sizes = np.logspace(start=0.0, stop=1, base=2, num=num_dataset_sizes) - 1
+    dataset_sizes = np.logspace(start=0.0, stop=1, base=2, num=NUM_DECREASING_DATASET_STEPS) - 1
 
     X_train, y_train = shuffle(dataset.X_train, dataset.y_train)
     for dataset_size in dataset_sizes:
@@ -109,7 +107,6 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         if is_final_column:
             axes[0][arch_idx].legend()
 
-        TQDM.update(1)
 
 
     fig.suptitle(f"Disentangled uncertainty over decreasing dataset sizes for {experiment_config.dataset_name}",

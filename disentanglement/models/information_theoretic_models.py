@@ -1,5 +1,6 @@
 from typing import Union
 
+from keras.src.callbacks import CSVLogger
 from keras_uncertainty.models import StochasticClassifier
 from keras.layers import Dense
 
@@ -7,6 +8,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 
 from disentanglement.datatypes import Dataset
+from disentanglement.logging import TQDM
 from disentanglement.models.architectures import CustomDeepEnsembleClassifier
 from disentanglement.settings import BATCH_SIZE, TEST_MODE, NUM_SAMPLES
 
@@ -32,7 +34,9 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
         for estimator in model.train_estimators:
             estimator.add(Dense(n_classes, activation="softmax"))
             estimator.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-        model.fit(x_train, y_train, verbose=2, epochs=epochs, batch_size=BATCH_SIZE)
+        csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
+        model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=0, callbacks=[csv_logger])
+        TQDM.update(1)
         return model
 
     model.add(Dense(n_classes, activation="softmax"))
@@ -42,8 +46,10 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
     if TEST_MODE:
         epochs = 1
 
-    model.fit(x_train, y_train, verbose=2, epochs=epochs, batch_size=BATCH_SIZE)
+    csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
+    model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=0, callbacks=[csv_logger])
     mc_model = StochasticClassifier(model)
+    TQDM.update(1)
 
     return mc_model
 

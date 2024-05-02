@@ -16,7 +16,7 @@ class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
     def predict_samples(self, x, num_samples=-1, batch_size=-1):
         predictions = []
         for estimator in self.test_estimators:
-            predictions.append(estimator.predict(x, batch_size=batch_size))
+            predictions.append(estimator.predict(x, batch_size=batch_size, verbose=0))
         return np.array(predictions)
 
 

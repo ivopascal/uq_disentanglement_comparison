@@ -39,3 +39,4 @@ class ExperimentConfig:
     dataset_name: str
     dataset: Dataset
     models: List[UqModel]
+    meta_experiments: List[str]

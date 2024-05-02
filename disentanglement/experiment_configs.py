@@ -16,7 +16,7 @@ def get_experiment_configs() -> List[ExperimentConfig]:
                 UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
                 UqModel(get_cifar10_dropconnect_architecture, "MC-DropConnect", epochs=100),
                 UqModel(get_cifar10_flipout_architecture, "Flipout", epochs=1000)],
-        meta_experiments=["ood_class"],
+        meta_experiments=["decreasing_dataset"],
     ),
         ExperimentConfig(
             dataset_name="blobs",

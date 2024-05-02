@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt

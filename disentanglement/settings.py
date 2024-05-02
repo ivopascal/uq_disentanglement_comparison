@@ -6,8 +6,8 @@ NUM_DEEP_ENSEMBLE_ESTIMATORS = 10
 
 TEST_MODE = True
 
-FIGURE_FOLDER = os.path.join(os.path.dirname(__file__), '../figures')
-DATA_FOLDER = os.path.join(os.path.dirname(__file__), '../results_data')
+FIGURE_FOLDER = './figures'
+DATA_FOLDER = './results_data'
 
 if TEST_MODE:
     NUM_SAMPLES = 3

@@ -26,6 +26,7 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
     dataset_sizes = np.logspace(start=0.0, stop=1, base=2, num=NUM_DECREASING_DATASET_STEPS) - 1
 
     X_train, y_train = shuffle(dataset.X_train, dataset.y_train)
+    y_train = y_train.reshape(-1)
     for dataset_size in dataset_sizes:
         X_train_subs = []
         y_train_subs = []

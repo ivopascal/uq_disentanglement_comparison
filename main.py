@@ -1,16 +1,15 @@
 import os.path
+import warnings
 from datetime import datetime
 
-import numpy as np
-from disentanglement.settings import TEST_MODE
-from tqdm import tqdm
+import tensorflow as tf
 
 from disentanglement.benchmarks.decreasing_dataset import plot_decreasing_dataset
 from disentanglement.benchmarks.label_noise import label_noise
 from disentanglement.benchmarks.ood_class_detection import plot_ood_class_detection
 from disentanglement.experiment_configs import get_experiment_configs
-import tensorflow as tf
-import warnings
+from disentanglement.settings import TEST_MODE
+
 warnings.filterwarnings("ignore")
 
 

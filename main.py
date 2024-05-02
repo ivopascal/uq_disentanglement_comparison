@@ -1,3 +1,4 @@
+import os.path
 from datetime import datetime
 
 from tqdm import tqdm
@@ -13,6 +14,10 @@ def main():
     start_time = datetime.now()
     experiment_configs = get_experiment_configs()
     from_folder = False
+
+    if not os.path.exists('./figures'):
+        os.mkdir('./figures')
+
     for experiment_config in tqdm(experiment_configs):
         if TEST_MODE:
             if experiment_config.dataset_name == "blobs":

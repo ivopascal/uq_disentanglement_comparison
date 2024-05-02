@@ -2,6 +2,7 @@ import os.path
 from datetime import datetime
 
 import numpy as np
+from disentanglement.settings import TEST_MODE
 from tqdm import tqdm
 
 from disentanglement.benchmarks.decreasing_dataset import plot_decreasing_dataset
@@ -18,7 +19,10 @@ def main():
 
     start_time = datetime.now()
     experiment_configs = get_experiment_configs()
-    from_folder = False
+    from_folder = True
+
+    if TEST_MODE:
+        from_folder = False
 
     if not os.path.exists('./figures'):
         os.mkdir('./figures')

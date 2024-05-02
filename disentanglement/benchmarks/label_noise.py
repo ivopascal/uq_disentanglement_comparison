@@ -51,10 +51,14 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
     for arch_idx, architecture in enumerate(experiment_config.models):
         TQDM.set_description(f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
 
+        gaussian_logits_results, it_results = None, None
         if from_folder:
-            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
-                                                                         meta_experiment_name=META_EXPERIMENT_NAME)
-        else:
+            try:
+                gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                                                                             meta_experiment_name=META_EXPERIMENT_NAME)
+            except FileNotFoundError:
+                pass
+        if not gaussian_logits_results or not it_results:
             gaussian_logits_results, it_results = run_label_noise(experiment_config.dataset,
                                                                   architecture.model_function, architecture.epochs)
             save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,

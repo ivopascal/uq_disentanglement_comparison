@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score
 
 from disentanglement.datatypes import Dataset
 from disentanglement.logging import TQDM
-from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE
+from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE, MODEL_TRAIN_VERBOSE
 
 
 def uncertainty(probs):
@@ -40,7 +40,7 @@ def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes
         for i, estimator in enumerate(trunk_model.train_estimators):
             train_model, pred_model = two_head_model(estimator, n_classes)
             csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
-            train_model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=0, callbacks=[csv_logger])
+            train_model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
             trunk_model.test_estimators[i] = pred_model
             TQDM.update(1)
         trunk_model.outputs = [0, 1]  # This tells Stochastic Model that there's two outputs
@@ -52,7 +52,7 @@ def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes
         epochs = 1
 
     csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
-    train_model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=0, callbacks=[csv_logger])
+    train_model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
     fin_model = DisentangledStochasticClassifier(pred_model, epi_num_samples=NUM_SAMPLES)
     TQDM.update(1)
 

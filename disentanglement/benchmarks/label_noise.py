@@ -4,7 +4,6 @@ from datetime import datetime
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.utils import shuffle
-from tqdm import tqdm
 
 from disentanglement.benchmarks.decreasing_dataset import plot_ale_epi_acc_on_axes
 from disentanglement.experiment_configs import get_experiment_configs
@@ -12,6 +11,7 @@ from disentanglement.datatypes import UncertaintyResults, ExperimentConfig, Data
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
+from disentanglement.logging import TQDM
 from disentanglement.util import load_results_from_file, save_results_to_file
 
 META_EXPERIMENT_NAME = 'label_noise'
@@ -34,7 +34,7 @@ def run_label_noise(dataset: Dataset, architecture_func, epochs):
         noises = np.arange(0, 1, 0.4)
         epochs = 2
 
-    for noise in tqdm(noises):
+    for noise in noises:
         X_train_noisy, y_train_noisy = partial_shuffle_dataset(dataset.X_train, dataset.y_train, percentage=noise)
         X_test_noisy, y_test_noisy = partial_shuffle_dataset(dataset.X_test, dataset.y_test, percentage=noise)
         noisy_dataset = Dataset(X_train_noisy, y_train_noisy, X_test_noisy, y_test_noisy)
@@ -50,6 +50,8 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
     accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
+        TQDM.set_description(f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
+
         if from_folder:
             gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
                                                                          meta_experiment_name=META_EXPERIMENT_NAME)
@@ -77,6 +79,8 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
 
         if is_final_column:
             axes[0][arch_idx].legend()
+
+        TQDM.update(1)
 
     fig.suptitle(f"Disentangled uncertainty over shuffled labels for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()

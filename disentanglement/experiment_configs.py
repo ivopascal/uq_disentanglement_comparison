@@ -14,7 +14,7 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         dataset=get_train_test_cifar_10(),
         models=[UqModel(get_cifar10_flipout_architecture, "Flipout", epochs=1000),
                 UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
-                UqModel(get_cifar10_dropout_architecture, "MC-DropConnect", epochs=100),
+                UqModel(get_cifar10_dropout_architecture, "MC-Dropout", epochs=100),
                 UqModel(get_cifar10_dropconnect_architecture, "MC-DropConnect", epochs=100)],
     ),
         ExperimentConfig(
@@ -22,7 +22,7 @@ def get_experiment_configs() -> List[ExperimentConfig]:
             dataset=get_train_test_blobs(),
             models=[UqModel(get_blobs_flipout_architecture, "Flipout", epochs=1000),
                     UqModel(get_blobs_ensemble_architecture, "Deep Ensemble", epochs=50),
-                    UqModel(get_blobs_dropout_architecture, "MC-DropConnect", epochs=50),
+                    UqModel(get_blobs_dropout_architecture, "MC-Dropout", epochs=50),
                     UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=50)],
         )
     ]

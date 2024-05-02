@@ -5,13 +5,13 @@ from typing import Tuple
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve
-from tqdm import tqdm
 
 from disentanglement.datatypes import UncertaintyResults
 from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.models.information_theoretic_models import train_it_model, expected_entropy, mutual_information
 from disentanglement.models.gaussian_logits_models import train_gaussian_logits_model, uncertainty
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE, FIGURE_FOLDER
+from disentanglement.logging import TQDM
 from disentanglement.util import load_results_from_file, save_results_to_file
 
 META_EXPERIMENT_NAME = "ood_class"
@@ -38,7 +38,7 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
     epi_gaussian_logit_tprs = []
     ale_it_tprs = []
     epi_it_tprs = []
-    for ood_class in tqdm(ood_classes):
+    for ood_class in ood_classes:
         X_train_id = dataset.X_train[dataset.y_train[:, 0] != ood_class]
         y_train_id = dataset.y_train[dataset.y_train != ood_class]
         y_test_ood = y_test == ood_class
@@ -47,7 +47,6 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
         it_preds = it_model.predict_samples(dataset.X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
         ale_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, expected_entropy(it_preds)))
         epi_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, mutual_information(it_preds)))
-
         gaussian_logits_model = train_gaussian_logits_model(architecture_func, X_train_id, y_train_id,
                                                             n_classes, epochs=epochs)
         pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE)
@@ -83,7 +82,10 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
         os.mkdir(f"{FIGURE_FOLDER}/ood_class/")
 
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
+
     for arch_idx, architecture in enumerate(experiment_config.models):
+        TQDM.set_description(f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
+
         if from_folder:
             gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
                                                                          meta_experiment_name=META_EXPERIMENT_NAME)
@@ -109,6 +111,9 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
 
         if arch_idx == len(experiment_config.models) - 1:
             axes[0][arch_idx].legend(loc="lower right")
+
+        TQDM.update(1)
+
 
     fig.suptitle(f"ROC curves for OOD detection for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()

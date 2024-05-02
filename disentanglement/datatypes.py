@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Iterable, Union
 
 import numpy as np
 
@@ -15,10 +15,10 @@ class UqModel:
 # For the decreasing dataset experiment, the changed parameter is different sizes of the training data.
 @dataclass
 class UncertaintyResults:
-    accuracies: List = field(default_factory=lambda: [])
+    accuracies: Union[List, Iterable] = field(default_factory=lambda: [])
     aleatoric_uncertainties: List = field(default_factory=lambda: [])
     epistemic_uncertainties: List = field(default_factory=lambda: [])
-    changed_parameter_values: List = field(default_factory=lambda: [])
+    changed_parameter_values: Union[List, Iterable] = field(default_factory=lambda: [])
 
     def append_values(self, accuracy, aleatoric_uncertainty, epistemic_uncertainty, parameter):
         self.accuracies.append(accuracy)

@@ -2,17 +2,16 @@ import os.path
 from datetime import datetime
 
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.utils import shuffle
 from tqdm import tqdm
 
-from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.datatypes import UncertaintyResults, Dataset
+from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
-from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, DATA_FOLDER
-from disentanglement.util import normalise
+from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
+from disentanglement.util import normalise, load_results_from_file, save_results_to_file
 
 META_EXPERIMENT_NAME = "decreasing_dataset"
 
@@ -70,50 +69,22 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
     return accuracy_axes
 
 
-def save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results):
-    if not os.path.exists(f"{DATA_FOLDER}/"):
-        os.mkdir(f"{DATA_FOLDER}/")
-    if not os.path.exists(f"{DATA_FOLDER}/{META_EXPERIMENT_NAME}/"):
-        os.mkdir(f"{DATA_FOLDER}/{META_EXPERIMENT_NAME}/")
-
-    df_gaussian_logits = pd.DataFrame(gaussian_logits_results.__dict__)
-    df_gaussian_logits.to_csv(f"{DATA_FOLDER}/{META_EXPERIMENT_NAME}/{META_EXPERIMENT_NAME}_"
-                              f"{experiment_config.dataset_name}_{architecture.uq_name}_"
-                              f"gaussian_logits_results.csv", index=False)
-
-    df_it_results = pd.DataFrame(it_results.__dict__)
-    df_it_results.to_csv(f"{DATA_FOLDER}/{META_EXPERIMENT_NAME}/{META_EXPERIMENT_NAME}_"
-                         f"{experiment_config.dataset_name}_{architecture.uq_name}_"
-                         f"it_results.csv", index=False)
-
-
-def load_results_from_file(experiment_config, architecture):
-    df_gaussian_logits = pd.read_csv(f"{DATA_FOLDER}/{META_EXPERIMENT_NAME}/{META_EXPERIMENT_NAME}_"
-                                     f"{experiment_config.dataset_name}_{architecture.uq_name}_"
-                                     f"gaussian_logits_results.csv")
-    gaussian_logits_results = UncertaintyResults(**df_gaussian_logits.to_dict(orient='list'))
-
-    df_it = pd.read_csv(f"{DATA_FOLDER}/{META_EXPERIMENT_NAME}/{META_EXPERIMENT_NAME}_"
-                        f"{experiment_config.dataset_name}_{architecture.uq_name}_"
-                        f"it_results.csv")
-    it_results = UncertaintyResults(**df_it.to_dict(orient='list'))
-    return gaussian_logits_results, it_results
-
-
 def plot_decreasing_dataset(experiment_config, from_folder=False):
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
     accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
         if from_folder:
-            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture)
+            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                                                                         meta_experiment_name=META_EXPERIMENT_NAME)
         else:
             gaussian_logits_results, it_results = run_decreasing_dataset(
                 experiment_config.dataset, architecture.model_function, architecture.epochs)
-
-        save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results)
+            save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
+                                 meta_experiment_name=META_EXPERIMENT_NAME)
 
         if TEST_MODE:  # Check if it's possible to load data from disk
-            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture)
+            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                                                                         meta_experiment_name=META_EXPERIMENT_NAME)
 
         if not os.path.exists(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/"):
             os.mkdir(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/")

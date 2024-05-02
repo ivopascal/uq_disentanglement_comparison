@@ -12,20 +12,21 @@ from disentanglement.settings import TEST_MODE
 def main():
     start_time = datetime.now()
     experiment_configs = get_experiment_configs()
+    from_folder = False
     for experiment_config in tqdm(experiment_configs):
         if TEST_MODE:
             if experiment_config.dataset_name == "blobs":
-                plot_decreasing_dataset(experiment_config)
-                label_noise(experiment_config)
+                plot_decreasing_dataset(experiment_config, from_folder)
+                label_noise(experiment_config, from_folder)
             if experiment_config.dataset_name == "CIFAR10":
-                plot_ood_class_detection(experiment_config)
+                plot_ood_class_detection(experiment_config, from_folder)
 
         else:
-            plot_decreasing_dataset(experiment_config)
-            label_noise(experiment_config)
+            plot_decreasing_dataset(experiment_config, from_folder)
+            label_noise(experiment_config, from_folder)
 
             if experiment_config.dataset_name != "blobs":
-                plot_ood_class_detection(experiment_config)
+                plot_ood_class_detection(experiment_config, from_folder)
     end_time = datetime.now()
 
     print(f"Ran all experiments in {end_time - start_time}")

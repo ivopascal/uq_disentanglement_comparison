@@ -12,6 +12,9 @@ from disentanglement.datatypes import UncertaintyResults, ExperimentConfig, Data
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
+from disentanglement.util import load_results_from_file, save_results_to_file
+
+META_EXPERIMENT_NAME = 'label_noise'
 
 
 def partial_shuffle_dataset(x, y, percentage):
@@ -43,13 +46,18 @@ def run_label_noise(dataset: Dataset, architecture_func, epochs):
     return gl_results, it_results
 
 
-def label_noise(experiment_config: ExperimentConfig):
-
+def label_noise(experiment_config: ExperimentConfig, from_folder=False):
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
     accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
-        gaussian_logits_results, it_results = run_label_noise(experiment_config.dataset,
-                                                              architecture.model_function, architecture.epochs)
+        if from_folder:
+            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                                                                         meta_experiment_name=META_EXPERIMENT_NAME)
+        else:
+            gaussian_logits_results, it_results = run_label_noise(experiment_config.dataset,
+                                                                  architecture.model_function, architecture.epochs)
+            save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
+                                 meta_experiment_name=META_EXPERIMENT_NAME)
         if not os.path.exists(f"{FIGURE_FOLDER}/noise_dataset/"):
             os.mkdir(f"{FIGURE_FOLDER}/noise_dataset")
 
@@ -74,7 +82,8 @@ def label_noise(experiment_config: ExperimentConfig):
     fig.tight_layout()
 
     if TEST_MODE:
-        fig.savefig(f"{FIGURE_FOLDER}/noise_dataset/disentangled_uncertainties_{experiment_config.dataset_name}_TEST.pdf")
+        fig.savefig(
+            f"{FIGURE_FOLDER}/noise_dataset/disentangled_uncertainties_{experiment_config.dataset_name}_TEST.pdf")
     else:
         fig.savefig(f"{FIGURE_FOLDER}/noise_dataset/disentangled_uncertainties_{experiment_config.dataset_name}.pdf")
 

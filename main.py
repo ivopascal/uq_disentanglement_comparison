@@ -15,7 +15,9 @@ warnings.filterwarnings("ignore")
 
 def main():
     physical_devices = tf.config.list_physical_devices('GPU')
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+    if physical_devices:
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
     tf.get_logger().setLevel('ERROR')
 

@@ -12,9 +12,11 @@ def get_train_test_cifar_10() -> Dataset:
     x_train, x_test = x_train / 255.0, x_test / 255.0
 
     if TEST_MODE:
-        N_CIFAR10_TEST_SAMPLES = 100
+        n_test_samples = 100
+    else:
+        n_test_samples = N_CIFAR10_TEST_SAMPLES
 
-    x_test = x_test[:N_CIFAR10_TEST_SAMPLES]
-    y_test = y_test[:N_CIFAR10_TEST_SAMPLES]
+        x_test = x_test[:n_test_samples]
+        y_test = y_test[:n_test_samples]
 
     return Dataset(x_train, y_train, x_test, y_test)

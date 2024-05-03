@@ -11,7 +11,7 @@ for experiment_config in get_experiment_configs():
         for meta_experiment in experiment_config.meta_experiments:
             training_runs_per_experiment = 1
             if meta_experiment == "ood_class":
-                if experiment_config.dataset == "CIFAR10":
+                if experiment_config.dataset_name == "CIFAR10":
                     training_runs_per_experiment = 10
                     if TEST_MODE:
                         training_runs_per_experiment = 2

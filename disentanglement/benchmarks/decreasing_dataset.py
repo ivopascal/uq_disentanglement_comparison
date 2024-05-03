@@ -33,7 +33,7 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
         X_train_subs = []
         y_train_subs = []
         for y_value in np.unique(y_train):
-            n_samples_per_class = int((y_train == y_value).sum() * dataset_size)
+            n_samples_per_class = int(np.sum((y_train == y_value)) * dataset_size)
             if n_samples_per_class == 0:
                 n_samples_per_class = 1
             X_train_subs.append(X_train[y_train == y_value][:n_samples_per_class])

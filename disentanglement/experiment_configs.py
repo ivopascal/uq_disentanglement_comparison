@@ -18,8 +18,8 @@ def get_experiment_configs() -> List[ExperimentConfig]:
                 UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
                 ],
         meta_experiments=["ood_class",
-                          # "decreasing_dataset",
-                          # "label_noise"
+                          "decreasing_dataset",
+                          "label_noise"
                           ],
     ),
         ExperimentConfig(

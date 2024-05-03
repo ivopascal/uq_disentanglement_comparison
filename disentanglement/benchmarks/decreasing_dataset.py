@@ -25,6 +25,8 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
 
     dataset_sizes = np.logspace(start=0.0, stop=1, base=2, num=NUM_DECREASING_DATASET_STEPS) - 1
 
+    dataset_sizes = dataset_sizes[::-1]
+
     X_train, y_train = shuffle(dataset.X_train, dataset.y_train)
     y_train = y_train.reshape(-1)
     for dataset_size in dataset_sizes:
@@ -79,8 +81,9 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
             try:
                 gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
                                                                              meta_experiment_name=META_EXPERIMENT_NAME)
+                print(f"Found results for {experiment_config.meta_experiments}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
             except FileNotFoundError:
-                pass
+                print(f"failed to find results for {experiment_config.meta_experiments}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
         if not gaussian_logits_results or not it_results:
             gaussian_logits_results, it_results = run_decreasing_dataset(
                 experiment_config.dataset, architecture.model_function, architecture.epochs)

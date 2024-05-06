@@ -29,7 +29,8 @@ def get_experiment_configs() -> List[ExperimentConfig]:
                         UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=50),
                         UqModel(get_blobs_flipout_architecture, "Flipout", epochs=1000)],
                 meta_experiments=["decreasing_dataset",
-                                  "label_noise"]
+                                  "label_noise"
+                                  ]
             )
         ]
 
@@ -41,9 +42,9 @@ def get_experiment_configs() -> List[ExperimentConfig]:
                 UqModel(get_cifar10_flipout_architecture, "Flipout", epochs=1000),
                 UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
                 ],
-        meta_experiments=["ood_class",
+        meta_experiments=[# "ood_class",
                           "decreasing_dataset",
-                          "label_noise"
+                          # "label_noise"
                           ],
     ),
         ExperimentConfig(

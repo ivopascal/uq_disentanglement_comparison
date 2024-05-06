@@ -24,7 +24,7 @@ class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
         if "verbose" not in kwargs:
             kwargs["verbose"] = 0
 
-        prediction = self.test_estimators[self.estimator_to_use].predict(X, batch_size=batch_size, **kwargs)
+        prediction = self.test_estimators[self.estimator_to_use % self.num_estimators].predict(X, batch_size=batch_size, **kwargs)
         self.estimator_to_use += 1
 
         return prediction

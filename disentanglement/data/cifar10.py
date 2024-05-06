@@ -1,10 +1,9 @@
 import keras
 
 from disentanglement.datatypes import Dataset
-from disentanglement.settings import TEST_MODE
+from disentanglement.settings import TEST_MODE, N_CIFAR10_TEST_SAMPLES
 
 N_CIFAR10_TRAINING_SAMPLES = 50_000
-N_CIFAR10_TEST_SAMPLES = 1_000
 
 
 def get_train_test_cifar_10() -> Dataset:

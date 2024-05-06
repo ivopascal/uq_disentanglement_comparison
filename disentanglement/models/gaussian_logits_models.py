@@ -63,6 +63,14 @@ def get_average_uncertainty_gaussian_logits(dataset: Dataset, architecture_func,
     n_classes = len(np.unique(dataset.y_train))
     gaussian_logits_model = train_gaussian_logits_model(architecture_func, dataset.X_train, dataset.y_train, n_classes,
                                                         epochs=epochs)
-    pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE)
 
-    return accuracy_score(dataset.y_test, pred_mean.argmax(axis=1)), uncertainty(pred_ale_std).mean(), uncertainty(pred_epi_std).mean()
+    if isinstance(gaussian_logits_model.model, DeepEnsembleClassifier):
+        num_samples = gaussian_logits_model.model.num_estimators
+    else:
+        num_samples = NUM_SAMPLES
+    pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE,
+                                                                          num_samples=num_samples)
+
+    return (accuracy_score(dataset.y_test, pred_mean.argmax(axis=1)),
+            uncertainty(pred_ale_std).mean(),
+            uncertainty(pred_epi_std).mean())

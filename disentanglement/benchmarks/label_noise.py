@@ -56,10 +56,10 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
             try:
                 gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
                                                                              meta_experiment_name=META_EXPERIMENT_NAME)
-                print(f"Found results for {experiment_config.meta_experiments}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                print(f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
 
             except FileNotFoundError:
-                print(f"failed to find results for {experiment_config.meta_experiments}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                print(f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
         if not gaussian_logits_results or not it_results:
             gaussian_logits_results, it_results = run_label_noise(experiment_config.dataset,
                                                                   architecture.model_function, architecture.epochs)

@@ -12,12 +12,22 @@ from disentanglement.settings import NUM_DEEP_ENSEMBLE_ESTIMATORS
 class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
     def __init__(self, model_fn, num_estimators):
         super(CustomDeepEnsembleClassifier, self).__init__(model_fn, num_estimators)
+        self.estimator_to_use = 0
 
     def predict_samples(self, x, num_samples=-1, batch_size=-1):
         predictions = []
         for estimator in self.test_estimators:
             predictions.append(estimator.predict(x, batch_size=batch_size, verbose=0))
         return np.array(predictions)
+
+    def predict(self, X, batch_size=32, num_ensembles=None, return_std = False, **kwargs):
+        if "verbose" not in kwargs:
+            kwargs["verbose"] = 0
+
+        prediction = self.test_estimators[self.estimator_to_use % self.num_estimators].predict(X, batch_size=batch_size, **kwargs)
+        self.estimator_to_use += 1
+
+        return prediction
 
 
 def get_blobs_dropout_architecture(prob=0.5, **_):

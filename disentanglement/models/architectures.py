@@ -29,6 +29,7 @@ class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
 
         return prediction
 
+
 def get_blobs_dropout_architecture(prob=0.5, **_):
     model = Sequential()
     model.add(Dense(32, activation="relu", input_shape=(2,)))

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Iterable, Union
+from typing import List, Callable, Tuple, Iterable, Union, Optional
 
 import numpy as np
 
@@ -37,6 +37,6 @@ class Dataset:
 @dataclass
 class ExperimentConfig:
     dataset_name: str
-    dataset: Dataset
+    dataset: Optional[Dataset]
     models: List[UqModel]
     meta_experiments: List[str]

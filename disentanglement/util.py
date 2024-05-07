@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 
+from disentanglement.data.eeg import N_EEG_SUBJECTS
 from disentanglement.datatypes import UncertaintyResults
 from disentanglement.settings import DATA_FOLDER, TEST_MODE
 
@@ -19,6 +20,30 @@ def get_test_append():
         test_append = ""
 
     return test_append
+
+
+def load_and_combine_motor_imagery_subjects(experiment_config, architecture, meta_experiment_name):
+    gaussian_logit_dfs = []
+    it_dfs = []
+    for subject_id in range(N_EEG_SUBJECTS):
+        try:
+            gaussian_logit_dfs.append(pd.read_csv(f"{DATA_FOLDER}/{meta_experiment_name}/{meta_experiment_name}_"
+                                                  f"{experiment_config.dataset_name} {subject_id}_{architecture.uq_name}_"
+                                                  f"gaussian_logits_results{get_test_append()}.csv"))
+            it_dfs.append(pd.read_csv(f"{DATA_FOLDER}/{meta_experiment_name}/{meta_experiment_name}_"
+                                      f"{experiment_config.dataset_name} {subject_id}_{architecture.uq_name}_"
+                                      f"it_results{get_test_append()}.csv"))
+        except FileNotFoundError:
+            print(f"Failed to find BCI data for subject {subject_id}. Skipping...")
+
+    gaussian_logit_df = pd.concat(gaussian_logit_dfs)
+    gaussian_logit_df = gaussian_logit_df.groupby(gaussian_logit_df.index).mean()
+
+    it_df = pd.concat(it_dfs)
+    it_df = it_df.groupby(it_df.index).mean()
+
+    return (UncertaintyResults(**gaussian_logit_df.to_dict(orient='list')),
+            UncertaintyResults(**it_df.to_dict(orient='list')))
 
 
 def save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results, meta_experiment_name):
@@ -39,6 +64,9 @@ def save_results_to_file(experiment_config, architecture, gaussian_logits_result
 
 
 def load_results_from_file(experiment_config, architecture, meta_experiment_name):
+    if experiment_config.dataset_name == "Motor Imagery BCI":
+        return load_and_combine_motor_imagery_subjects(experiment_config, architecture, meta_experiment_name)
+
     df_gaussian_logits = pd.read_csv(f"{DATA_FOLDER}/{meta_experiment_name}/{meta_experiment_name}_"
                                      f"{experiment_config.dataset_name}_{architecture.uq_name}_"
                                      f"gaussian_logits_results{get_test_append()}.csv")

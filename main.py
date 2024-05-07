@@ -3,6 +3,8 @@ import warnings
 from datetime import datetime
 
 import tensorflow as tf
+from matplotlib import pyplot as plt
+import seaborn as sns
 
 from disentanglement.benchmarks.decreasing_dataset import plot_decreasing_dataset
 from disentanglement.benchmarks.label_noise import label_noise
@@ -15,6 +17,8 @@ warnings.filterwarnings("ignore")
 
 def main():
     physical_devices = tf.config.list_physical_devices('GPU')
+    plt.rcParams['axes.grid'] = False
+    sns.reset_orig()
 
     if physical_devices:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)

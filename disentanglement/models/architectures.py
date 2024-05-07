@@ -1,6 +1,10 @@
 import numpy as np
 from keras import Sequential
-from keras.src.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
+from keras.src.constraints import max_norm
+from keras.src.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout, Activation, BatchNormalization, \
+    AveragePooling2D
+from tensorflow.keras import backend as K
+
 from keras_uncertainty.layers import StochasticDropout, DropConnectDense, FlipoutDense
 from keras_uncertainty.models import DeepEnsembleClassifier
 
@@ -20,11 +24,12 @@ class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
             predictions.append(estimator.predict(x, batch_size=batch_size, verbose=0))
         return np.array(predictions)
 
-    def predict(self, X, batch_size=32, num_ensembles=None, return_std = False, **kwargs):
+    def predict(self, X, batch_size=32, num_ensembles=None, return_std=False, **kwargs):
         if "verbose" not in kwargs:
             kwargs["verbose"] = 0
 
-        prediction = self.test_estimators[self.estimator_to_use % self.num_estimators].predict(X, batch_size=batch_size, **kwargs)
+        prediction = self.test_estimators[self.estimator_to_use % self.num_estimators].predict(X, batch_size=batch_size,
+                                                                                               **kwargs)
         self.estimator_to_use += 1
 
         return prediction
@@ -131,6 +136,55 @@ def get_cifar10_flipout_architecture(n_training_samples=N_CIFAR10_TRAINING_SAMPL
     }
 
     model = get_cifar10_convolutional_blocks()
-    model.add(FlipoutDense(64, kl_weight, **prior_params, activation="relu",))
+    model.add(FlipoutDense(64, kl_weight, **prior_params, activation="relu", ))
 
     return model
+
+
+# need these for ShallowConvNet
+def square(x):
+    return K.square(x)
+
+
+def log(x):
+    return K.log(K.clip(x, min_value=1e-7, max_value=10000))
+
+
+def get_eeg_convolutional_blocks(channels=22, samples=513):
+    # This is based off ShallowConvNet, but we can add a (Bayesian) FC layer after the conv block
+    model = Sequential()
+    model.add(Conv2D(40, (1, 13),
+                     input_shape=(channels, samples, 1),
+                     kernel_constraint=max_norm(2., axis=(0, 1, 2))))
+    model.add(Conv2D(40, (channels, 1), use_bias=False,
+                     kernel_constraint=max_norm(2., axis=(0, 1, 2))))
+    model.add(BatchNormalization(epsilon=1e-05, momentum=0.9))
+    model.add(Activation(square))
+    model.add(AveragePooling2D(pool_size=(1, 35), strides=(1, 7)))
+    model.add(Activation(log))
+    model.add(Flatten())
+
+    return model
+
+
+def get_eeg_dropout_architecture(prob=0.3, **_):
+    model = get_eeg_convolutional_blocks()
+    model.add(Dense(64, activation='relu'))
+    model.add(StochasticDropout(prob))
+
+    return model
+
+
+def get_eeg_ensemble_architecture(prob=0.3, **_):
+    def model_fn():
+        model = get_eeg_convolutional_blocks()
+        model.add(Dense(64, activation='relu'))
+        model.add(Dropout(prob))
+
+        model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+
+        return model
+
+    ensemble_model = CustomDeepEnsembleClassifier(model_fn, num_estimators=NUM_DEEP_ENSEMBLE_ESTIMATORS)
+    return ensemble_model
+

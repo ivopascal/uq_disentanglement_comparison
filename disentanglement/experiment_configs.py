@@ -2,10 +2,12 @@ from typing import List
 
 from disentanglement.data.blobs import get_train_test_blobs
 from disentanglement.data.cifar10 import get_train_test_cifar_10
+from disentanglement.data.eeg import get_eeg_data
 from disentanglement.datatypes import UqModel, ExperimentConfig
 from disentanglement.models.architectures import get_blobs_dropout_architecture, get_cifar10_dropout_architecture, \
     get_cifar10_dropconnect_architecture, get_blobs_dropconnect_architecture, get_blobs_ensemble_architecture, \
-    get_cifar10_ensemble_architecture, get_blobs_flipout_architecture, get_cifar10_flipout_architecture
+    get_cifar10_ensemble_architecture, get_blobs_flipout_architecture, get_cifar10_flipout_architecture, \
+    get_eeg_dropout_architecture
 from disentanglement.settings import TEST_MODE
 
 
@@ -33,6 +35,20 @@ def get_experiment_configs() -> List[ExperimentConfig]:
                 meta_experiments=["decreasing_dataset",
                                   "label_noise"
                                   ]
+            ),
+            ExperimentConfig(
+                dataset_name="Motor Imagery BCI",
+                dataset=get_eeg_data(),
+                models=[
+                    UqModel(get_eeg_dropout_architecture, "MC-Dropout", epochs=100),
+                    UqModel(get_eeg_dropout_architecture, "MC-Dropout", epochs=100),
+                    # UqModel(get_eeg_ensemble_architecture, "Deep Ensemble", epochs=100),
+                    # UqModel(get_eeg_dropconnect_architecture, "MC-DropConnect", epochs=100),
+                    # UqModel(get_eeg_flipout_architecture, "Flipout", epochs=500)
+                ],
+                meta_experiments=["decreasing_dataset",
+                                  # "label_noise"
+                                  ]
             )
         ]
 
@@ -57,6 +73,19 @@ def get_experiment_configs() -> List[ExperimentConfig]:
                     UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=50),
                     UqModel(get_blobs_flipout_architecture, "Flipout", epochs=500)
                 ],
-            meta_experiments=["decreasing_dataset", "label_noise"]
-        )
+            meta_experiments=[# "decreasing_dataset", "label_noise"
+                              ]
+        ),
+        ExperimentConfig(
+            dataset_name="Motor Imagery BCI",
+            dataset=get_eeg_data(),
+            models=[
+                UqModel(get_eeg_dropout_architecture, "MC-Dropout", epochs=100),
+                # UqModel(get_eeg_ensemble_architecture, "Deep Ensemble", epochs=100),
+                # UqModel(get_eeg_dropconnect_architecture, "MC-DropConnect", epochs=100),
+                # UqModel(get_eeg_flipout_architecture, "Flipout", epochs=500)
+            ],
+            meta_experiments=[# "decreasing_dataset",
+                              # "label_noise"
+                              ])
     ]

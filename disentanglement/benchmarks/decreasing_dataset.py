@@ -1,4 +1,5 @@
 import os.path
+from dataclasses import fields, asdict
 from datetime import datetime
 
 import numpy as np
@@ -52,10 +53,14 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
     return gl_results, it_results
 
 
-def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False):
-    ax.plot(results.changed_parameter_values, normalise(results.epistemic_uncertainties), label="Epistemic")
-    ax.plot(results.changed_parameter_values, normalise(results.aleatoric_uncertainties), label="Aleatoric")
+def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False, normalise_uncertainties=True):
 
+    if normalise_uncertainties:
+        ax.plot(results.changed_parameter_values, normalise(results.epistemic_uncertainties), label="Epistemic")
+        ax.plot(results.changed_parameter_values, normalise(results.aleatoric_uncertainties), label="Aleatoric")
+    else:
+        ax.plot(results.changed_parameter_values, results.epistemic_uncertainties, label="Epistemic")
+        ax.plot(results.changed_parameter_values, results.aleatoric_uncertainties, label="Aleatoric")
     accuracy_axes = ax.twinx()
     accuracy_axes.plot(results.changed_parameter_values, results.accuracies,
                        label="Accuracy", color='green')
@@ -100,10 +105,21 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         is_first_column = arch_idx == 0
         is_final_column = arch_idx == len(experiment_config.models) - 1
 
+        entry_to_ignore = np.argmin(gaussian_logits_results.changed_parameter_values)
+        del gaussian_logits_results.accuracies[entry_to_ignore]
+        del gaussian_logits_results.epistemic_uncertainties[entry_to_ignore]
+        del gaussian_logits_results.aleatoric_uncertainties[entry_to_ignore]
+        del gaussian_logits_results.changed_parameter_values[entry_to_ignore]
+
+        del it_results.accuracies[entry_to_ignore]
+        del it_results.epistemic_uncertainties[entry_to_ignore]
+        del it_results.aleatoric_uncertainties[entry_to_ignore]
+        del it_results.changed_parameter_values[entry_to_ignore]
+
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
-                                                          accuracy_y_ax_to_share, is_final_column)
+                                                          accuracy_y_ax_to_share, is_final_column, normalise_uncertainties=True)
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
-                                                          accuracy_y_ax_to_share, is_final_column)
+                                                          accuracy_y_ax_to_share, is_final_column, normalise_uncertainties=True)
 
         axes[0][arch_idx].set_title(architecture.uq_name)
         axes[1][arch_idx].set_xlabel("Dataset size")
@@ -131,7 +147,7 @@ if __name__ == "__main__":
     start_time = datetime.now()
     experiment_configs = get_experiment_configs()
     for experiment_conf in experiment_configs:
-        if experiment_conf.dataset_name == "blobs":
+        if experiment_conf.dataset_name == "Motor Imagery BCI":
             plot_decreasing_dataset(experiment_conf, from_folder=False)
 
     print(f"Running Decreasing Dataset experiments took: {datetime.now() - start_time}")

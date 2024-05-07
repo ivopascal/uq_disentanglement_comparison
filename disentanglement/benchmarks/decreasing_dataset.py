@@ -1,5 +1,4 @@
 import os.path
-from dataclasses import fields, asdict
 from datetime import datetime
 
 import numpy as np
@@ -8,10 +7,10 @@ from sklearn.utils import shuffle
 
 from disentanglement.datatypes import UncertaintyResults, Dataset
 from disentanglement.experiment_configs import get_experiment_configs
+from disentanglement.logging import TQDM
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_DECREASING_DATASET_STEPS
-from disentanglement.logging import TQDM
 from disentanglement.util import normalise, load_results_from_file, save_results_to_file
 
 META_EXPERIMENT_NAME = "decreasing_dataset"

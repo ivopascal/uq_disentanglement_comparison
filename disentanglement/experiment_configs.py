@@ -2,13 +2,12 @@ from typing import List
 
 from disentanglement.data.blobs import get_train_test_blobs
 from disentanglement.data.cifar10 import get_train_test_cifar_10
-from disentanglement.data.eeg import get_eeg_data, N_EEG_TRAINING_SAMPLES, N_EEG_SUBJECTS
+from disentanglement.data.eeg import get_eeg_data, N_EEG_SUBJECTS
 from disentanglement.datatypes import UqModel, ExperimentConfig
 from disentanglement.models.architectures import get_blobs_dropout_architecture, \
     get_blobs_dropconnect_architecture, get_blobs_ensemble_architecture, \
-    get_blobs_flipout_architecture, get_dropout_from_backbone, get_cifar10_convolutional_blocks, \
-    get_dropconnect_from_backbone, get_flipout_from_backbone, get_ensemble_from_backbone, get_eeg_convolutional_blocks, \
-    get_cifar10_flipout_architecture, get_cifar10_dropout_architecture, get_cifar10_dropconnect_architecture, \
+    get_blobs_flipout_architecture, get_cifar10_flipout_architecture, get_cifar10_dropout_architecture, \
+    get_cifar10_dropconnect_architecture, \
     get_cifar10_ensemble_architecture, get_eeg_dropout_architecture, get_eeg_dropconnect_architecture, \
     get_eeg_flipout_architecture, get_eeg_ensemble_architecture
 from disentanglement.settings import TEST_MODE

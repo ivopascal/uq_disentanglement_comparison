@@ -6,12 +6,12 @@ from matplotlib import pyplot as plt
 from sklearn.utils import shuffle
 
 from disentanglement.benchmarks.decreasing_dataset import plot_ale_epi_acc_on_axes
-from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.datatypes import UncertaintyResults, ExperimentConfig, Dataset
+from disentanglement.experiment_configs import get_experiment_configs
+from disentanglement.logging import TQDM
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
-from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_DECREASING_DATASET_STEPS, NUM_LABEL_NOISE_STEPS
-from disentanglement.logging import TQDM
+from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_LABEL_NOISE_STEPS
 from disentanglement.util import load_results_from_file, save_results_to_file
 
 META_EXPERIMENT_NAME = 'label_noise'

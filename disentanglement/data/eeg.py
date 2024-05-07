@@ -4,7 +4,6 @@ from sklearn.preprocessing import LabelEncoder
 
 from disentanglement.datatypes import Dataset
 
-N_EEG_TRAINING_SAMPLES = 500
 N_EEG_SUBJECTS = 9
 
 

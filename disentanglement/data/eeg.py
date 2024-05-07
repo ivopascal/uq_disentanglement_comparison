@@ -4,14 +4,17 @@ from sklearn.preprocessing import LabelEncoder
 
 from disentanglement.datatypes import Dataset
 
+N_EEG_TRAINING_SAMPLES = 500
+N_EEG_SUBJECTS = 9
 
-def get_eeg_data():
+
+def get_eeg_data(subject_id):
     dataset = BNCI2014_001()        # load dataset
     paradigm = MotorImagery(        # make paradigm, filter between 7.5 and 30 Hz
         n_classes=4, fmin=7.5, fmax=30, tmin=0, tmax=None, resample=128
     )
 
-    X, y, metadata = paradigm.get_data(dataset=dataset, subjects=[1])
+    X, y, metadata = paradigm.get_data(dataset=dataset, subjects=[subject_id + 1])
 
     le = LabelEncoder()
     y = le.fit_transform(y)

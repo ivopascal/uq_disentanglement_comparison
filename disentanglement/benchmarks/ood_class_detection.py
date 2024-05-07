@@ -4,7 +4,7 @@ from typing import Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, accuracy_score
 
 from disentanglement.datatypes import UncertaintyResults
 from disentanglement.experiment_configs import get_experiment_configs
@@ -28,6 +28,8 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
     ood_classes = np.unique(dataset.y_train)
     n_classes = len(np.unique(dataset.y_train))
     y_test = dataset.y_test.reshape(-1)
+    y_train = dataset.y_train.reshape(-1)
+
     base_fpr = np.linspace(0, 1, 101)
 
     if TEST_MODE:
@@ -39,17 +41,26 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
     ale_it_tprs = []
     epi_it_tprs = []
     for ood_class in ood_classes:
-        X_train_id = dataset.X_train[dataset.y_train[:, 0] != ood_class]
-        y_train_id = dataset.y_train[dataset.y_train != ood_class]
+        X_train_id = dataset.X_train[y_train != ood_class]
+        y_train_id = dataset.y_train[y_train != ood_class]
         y_test_ood = y_test == ood_class
 
         it_model = train_it_model(architecture_func, X_train_id, y_train_id, n_classes, epochs=epochs)
         it_preds = it_model.predict_samples(dataset.X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
         ale_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, expected_entropy(it_preds)))
         epi_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, mutual_information(it_preds)))
+
+        accuracy = accuracy_score(y_test, it_preds.mean(axis=0).argmax(axis=1))
+        if accuracy < 0.4:
+            print(f"Warning, low accuracy: {accuracy} with Information Theoretic model")
+
         gaussian_logits_model = train_gaussian_logits_model(architecture_func, X_train_id, y_train_id,
                                                             n_classes, epochs=epochs)
         pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE)
+
+        accuracy = accuracy_score(y_test, it_preds.mean(axis=0).argmax(axis=1))
+        if accuracy < 0.4:
+            print(f"Warning, low accuracy: {accuracy} with Information Theoretic model")
 
         ale_gaussian_logits = uncertainty(pred_ale_std)
         epi_gaussian_logits = uncertainty(pred_epi_std)

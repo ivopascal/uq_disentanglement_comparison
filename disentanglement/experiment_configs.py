@@ -3,7 +3,7 @@ from typing import List
 from disentanglement.data.blobs import get_train_test_blobs
 from disentanglement.data.cifar10 import get_train_test_cifar_10
 from disentanglement.data.eeg import get_eeg_data, N_EEG_SUBJECTS
-from disentanglement.datatypes import UqModel, ExperimentConfig
+from disentanglement.datatypes import UqModel, ExperimentConfig, Dataset
 from disentanglement.models.architectures import get_blobs_dropout_architecture, \
     get_blobs_dropconnect_architecture, get_blobs_ensemble_architecture, \
     get_blobs_flipout_architecture, get_cifar10_flipout_architecture, get_cifar10_dropout_architecture, \
@@ -40,7 +40,7 @@ def get_test_mode_configs() -> List[ExperimentConfig]:
             ]
         ),
         ExperimentConfig(
-            dataset_name="Motor Imagery BCI",
+            dataset_name="Motor Imagery BCI Test",
             dataset=get_eeg_data(subject_id=0),
             models=[
                 UqModel(get_eeg_dropout_architecture, "MC-Dropout", epochs=100),
@@ -89,10 +89,21 @@ def get_eeg_config_single_subject(subject_id, meta_experiments=[]) -> Experiment
             UqModel(get_eeg_dropout_architecture, "MC-Dropout", epochs=100),
             UqModel(get_eeg_dropconnect_architecture, "MC-DropConnect",
                     epochs=100),
-            UqModel(get_eeg_flipout_architecture, "Flipout", epochs=500),
-            UqModel(get_eeg_ensemble_architecture, "Deep Ensemble", epochs=100)
+            # UqModel(get_eeg_flipout_architecture, "Flipout", epochs=500),
+            # UqModel(get_eeg_ensemble_architecture, "Deep Ensemble", epochs=100)
         ],
         meta_experiments=meta_experiments,
+    )
+
+
+def get_eeg_plotting_config(meta_experiments=[]) -> ExperimentConfig:
+    models = get_eeg_config_single_subject(subject_id=0, meta_experiments=meta_experiments).models
+
+    return ExperimentConfig(
+        dataset_name="Motor Imagery BCI",
+        dataset=None,
+        models=models,
+        meta_experiments=meta_experiments
     )
 
 
@@ -107,9 +118,13 @@ def get_experiment_configs() -> List[ExperimentConfig]:
 
     return [
         get_cifar10_config(meta_experiments=[]),
-        get_blobs_config(meta_experiments=[]),
-        *get_eeg_configs(meta_experiments=["decreasing_dataset",
-                                           "label_noise",
+        # get_blobs_config(meta_experiments=[]),
+        *get_eeg_configs(meta_experiments=[# "decreasing_dataset",
+                                           # "label_noise",
                                            "ood_class"
                                            ]),
+        get_eeg_plotting_config(meta_experiments=[# "decreasing_dataset",
+                                                  # "label_noise",
+                                                  "ood_class"
+                                                  ])
     ]

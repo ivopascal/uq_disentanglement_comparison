@@ -89,8 +89,8 @@ def get_eeg_config_single_subject(subject_id, meta_experiments=[]) -> Experiment
             UqModel(get_eeg_dropout_architecture, "MC-Dropout", epochs=100),
             UqModel(get_eeg_dropconnect_architecture, "MC-DropConnect",
                     epochs=100),
-            # UqModel(get_eeg_flipout_architecture, "Flipout", epochs=500),
-            # UqModel(get_eeg_ensemble_architecture, "Deep Ensemble", epochs=100)
+            UqModel(get_eeg_flipout_architecture, "Flipout", epochs=500),
+            UqModel(get_eeg_ensemble_architecture, "Deep Ensemble", epochs=100)
         ],
         meta_experiments=meta_experiments,
     )
@@ -118,13 +118,13 @@ def get_experiment_configs() -> List[ExperimentConfig]:
 
     return [
         get_cifar10_config(meta_experiments=[]),
-        # get_blobs_config(meta_experiments=[]),
-        *get_eeg_configs(meta_experiments=[# "decreasing_dataset",
-                                           # "label_noise",
+        get_blobs_config(meta_experiments=[]),
+        *get_eeg_configs(meta_experiments=["decreasing_dataset",
+                                           "label_noise",
                                            "ood_class"
                                            ]),
-        get_eeg_plotting_config(meta_experiments=[# "decreasing_dataset",
-                                                  # "label_noise",
+        get_eeg_plotting_config(meta_experiments=["decreasing_dataset",
+                                                  "label_noise",
                                                   "ood_class"
                                                   ])
     ]

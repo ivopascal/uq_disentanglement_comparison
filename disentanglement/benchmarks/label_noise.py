@@ -6,12 +6,12 @@ from matplotlib import pyplot as plt
 from sklearn.utils import shuffle
 
 from disentanglement.benchmarks.decreasing_dataset import plot_ale_epi_acc_on_axes
-from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.datatypes import UncertaintyResults, ExperimentConfig, Dataset
+from disentanglement.experiment_configs import get_experiment_configs
+from disentanglement.logging import TQDM
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
-from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_DECREASING_DATASET_STEPS, NUM_LABEL_NOISE_STEPS
-from disentanglement.logging import TQDM
+from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_LABEL_NOISE_STEPS
 from disentanglement.util import load_results_from_file, save_results_to_file
 
 META_EXPERIMENT_NAME = 'label_noise'
@@ -72,15 +72,17 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
         is_final_column = arch_idx == len(experiment_config.models) - 1
 
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
-                                                          accuracy_y_ax_to_share, is_final_column)
+                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          normalise_uncertainties=False)
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
-                                                          accuracy_y_ax_to_share, is_final_column)
+                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          normalise_uncertainties=False)
 
         axes[0][arch_idx].set_title(architecture.uq_name)
         axes[1][arch_idx].set_xlabel("Labels shuffled")
         if is_first_column:
-            axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty (normalised)")
-            axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty (normalised)")
+            axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty")
+            axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty")
 
         if is_final_column:
             axes[0][arch_idx].legend()

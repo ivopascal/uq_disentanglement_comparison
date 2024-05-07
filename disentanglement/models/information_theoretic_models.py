@@ -28,7 +28,7 @@ def mutual_information(probs) -> np.ndarray:
 
 def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
         -> Union[CustomDeepEnsembleClassifier, StochasticClassifier]:
-    model = model_creator()
+    model = model_creator(n_training_samples=x_train.shape[0])
 
     if isinstance(model, CustomDeepEnsembleClassifier):
         for estimator in model.train_estimators:

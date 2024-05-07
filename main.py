@@ -41,6 +41,7 @@ def main():
             label_noise(experiment_config, from_folder)
         if "ood_class" in experiment_config.meta_experiments:
             plot_ood_class_detection(experiment_config, from_folder)
+        experiment_config.dataset = None
 
     end_time = datetime.now()
 

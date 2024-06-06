@@ -109,7 +109,7 @@ def get_eeg_plotting_config(meta_experiments=[]) -> ExperimentConfig:
 
 def get_eeg_configs(meta_experiments=[]) -> List[ExperimentConfig]:
     return [get_eeg_config_single_subject(subject_id, meta_experiments=meta_experiments) for subject_id in
-            range(N_EEG_SUBJECTS)]
+            range(1)]
 
 
 def get_experiment_configs() -> List[ExperimentConfig]:
@@ -117,14 +117,14 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         return get_test_mode_configs()
 
     return [
-        get_cifar10_config(meta_experiments=[]),
-        get_blobs_config(meta_experiments=[]),
-        *get_eeg_configs(meta_experiments=["decreasing_dataset",
-                                           "label_noise",
+        # get_cifar10_config(meta_experiments=[]),
+        # get_blobs_config(meta_experiments=[]),
+        *get_eeg_configs(meta_experiments=[# "decreasing_dataset",
+                                           # "label_noise",
                                            "ood_class"
                                            ]),
-        get_eeg_plotting_config(meta_experiments=["decreasing_dataset",
-                                                  "label_noise",
-                                                  "ood_class"
-                                                  ])
+        # get_eeg_plotting_config(meta_experiments=["decreasing_dataset",
+        #                                           "label_noise",
+        #                                           "ood_class"
+        #                                           ])
     ]

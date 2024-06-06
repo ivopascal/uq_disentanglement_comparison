@@ -1,3 +1,5 @@
+import gc
+
 import numpy as np
 from keras.models import Model
 from keras.src.callbacks import CSVLogger
@@ -43,6 +45,7 @@ def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes
             train_model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
             trunk_model.test_estimators[i] = pred_model
             TQDM.update(1)
+            gc.collect()
         trunk_model.outputs = [0, 1]  # This tells Stochastic Model that there's two outputs
         return DisentangledStochasticClassifier(trunk_model, epi_num_samples=trunk_model.num_estimators)
 

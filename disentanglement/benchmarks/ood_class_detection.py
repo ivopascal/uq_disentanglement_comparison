@@ -1,3 +1,4 @@
+import gc
 import os
 from datetime import datetime
 from typing import Tuple
@@ -5,6 +6,8 @@ from typing import Tuple
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve, accuracy_score
+
+import keras.backend as K
 
 from disentanglement.datatypes import UncertaintyResults
 from disentanglement.experiment_configs import get_experiment_configs
@@ -45,27 +48,34 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
         y_train_id = dataset.y_train[y_train != ood_class]
         y_test_ood = y_test == ood_class
 
+        # Information Theoretic part
         it_model = train_it_model(architecture_func, X_train_id, y_train_id, n_classes, epochs=epochs)
         it_preds = it_model.predict_samples(dataset.X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
         ale_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, expected_entropy(it_preds)))
         epi_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, mutual_information(it_preds)))
 
+        K.clear_session()
+        del it_model
+        gc.collect()
+
+        # Sanity check
         accuracy = accuracy_score(y_test, it_preds.mean(axis=0).argmax(axis=1))
         if accuracy < 0.4:
             print(f"Warning, low accuracy: {accuracy} with Information Theoretic model")
 
+        # Gaussian Logits part
         gaussian_logits_model = train_gaussian_logits_model(architecture_func, X_train_id, y_train_id,
                                                             n_classes, epochs=epochs)
         pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE)
-
-        accuracy = accuracy_score(y_test, it_preds.mean(axis=0).argmax(axis=1))
-        if accuracy < 0.4:
-            print(f"Warning, low accuracy: {accuracy} with Information Theoretic model")
 
         ale_gaussian_logits = uncertainty(pred_ale_std)
         epi_gaussian_logits = uncertainty(pred_epi_std)
         ale_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, ale_gaussian_logits))
         epi_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, epi_gaussian_logits))
+
+        K.clear_session()
+        del gaussian_logits_model
+        gc.collect()
 
     gl_results = UncertaintyResults(accuracies=np.empty_like(base_fpr),
                                     aleatoric_uncertainties=np.array(ale_gaussian_logit_tprs).mean(axis=0),

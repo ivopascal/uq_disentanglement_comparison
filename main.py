@@ -1,3 +1,4 @@
+import gc
 import os.path
 import warnings
 from datetime import datetime
@@ -5,6 +6,8 @@ from datetime import datetime
 import tensorflow as tf
 from matplotlib import pyplot as plt
 import seaborn as sns
+
+import keras.backend as K
 
 from disentanglement.benchmarks.decreasing_dataset import plot_decreasing_dataset
 from disentanglement.benchmarks.label_noise import label_noise
@@ -16,6 +19,7 @@ warnings.filterwarnings("ignore")
 
 
 def main():
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     physical_devices = tf.config.list_physical_devices('GPU')
     plt.rcParams['axes.grid'] = False
     sns.reset_orig()
@@ -35,13 +39,17 @@ def main():
     if not os.path.exists('./figures'):
         os.mkdir('./figures')
     for experiment_config in experiment_configs:
+        has_dataset = experiment_config.dataset is None
+
         if "decreasing_dataset" in experiment_config.meta_experiments:
-            plot_decreasing_dataset(experiment_config, from_folder)
+            plot_decreasing_dataset(experiment_config, from_folder=(has_dataset or from_folder))
         if "label_noise" in experiment_config.meta_experiments:
-            label_noise(experiment_config, from_folder)
+            label_noise(experiment_config, from_folder=(has_dataset or from_folder))
         if "ood_class" in experiment_config.meta_experiments:
-            plot_ood_class_detection(experiment_config, from_folder)
+            plot_ood_class_detection(experiment_config, from_folder=(has_dataset or from_folder))
         experiment_config.dataset = None
+        K.clear_session()
+        gc.collect()
 
     end_time = datetime.now()
 

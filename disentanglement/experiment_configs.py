@@ -72,9 +72,9 @@ def get_blobs_config(meta_experiments=[]) -> ExperimentConfig:
     return ExperimentConfig(
         dataset_name="blobs",
         dataset=get_train_test_blobs(),
-        models=[UqModel(get_blobs_dropout_architecture, "MC-Dropout", epochs=50),
-                UqModel(get_blobs_ensemble_architecture, "Deep Ensemble", epochs=50),
-                UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=50),
+        models=[UqModel(get_blobs_dropout_architecture, "MC-Dropout", epochs=500),
+                UqModel(get_blobs_ensemble_architecture, "Deep Ensemble", epochs=500),
+                UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=500),
                 UqModel(get_blobs_flipout_architecture, "Flipout", epochs=500)
                 ],
         meta_experiments=meta_experiments,
@@ -113,12 +113,16 @@ def get_eeg_configs(meta_experiments=[]) -> List[ExperimentConfig]:
 
 
 def get_experiment_configs() -> List[ExperimentConfig]:
-    if TEST_MODE:
-        return get_test_mode_configs()
+    # if TEST_MODE:
+    #     return get_test_mode_configs()
 
     return [
-        get_cifar10_config(meta_experiments=[]),
-        get_blobs_config(meta_experiments=[]),
+        get_cifar10_config(meta_experiments=["decreasing_dataset",
+                                           "label_noise",
+                                           "ood_class"]),
+        get_blobs_config(meta_experiments=["decreasing_dataset",
+                                           "label_noise",
+                                           ]),
         *get_eeg_configs(meta_experiments=["decreasing_dataset",
                                            "label_noise",
                                            "ood_class"

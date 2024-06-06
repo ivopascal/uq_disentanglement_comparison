@@ -1,3 +1,4 @@
+import gc
 import os
 from datetime import datetime
 
@@ -41,6 +42,9 @@ def run_label_noise(dataset: Dataset, architecture_func, epochs):
                                  noise)
 
         it_results.append_values(*get_average_uncertainty_it(noisy_dataset, architecture_func, epochs), noise)
+
+        gc.collect()
+
 
     return gl_results, it_results
 

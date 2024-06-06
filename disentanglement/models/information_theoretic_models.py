@@ -36,7 +36,7 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
             estimator.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
         csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
         model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
-        TQDM.update(1)
+        TQDM.update(len(model.train_estimators))
         return model
 
     model.add(Dense(n_classes, activation="softmax"))

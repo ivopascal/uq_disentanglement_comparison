@@ -11,6 +11,7 @@ scikit-learn = "*"
 pandas = "*"
 moabb = "*"
 mne = "*"
+mne-bids = "*"
 
 [dev-packages]
 

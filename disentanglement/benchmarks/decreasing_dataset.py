@@ -1,3 +1,4 @@
+import gc
 import os.path
 from datetime import datetime
 
@@ -48,6 +49,7 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
                                  dataset_size)
 
         it_results.append_values(*get_average_uncertainty_it(small_dataset, model_function, epochs), dataset_size)
+        gc.collect()
 
     return gl_results, it_results
 

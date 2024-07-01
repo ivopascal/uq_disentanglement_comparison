@@ -51,8 +51,10 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
         # Information Theoretic part
         it_model = train_it_model(architecture_func, X_train_id, y_train_id, n_classes, epochs=epochs)
         it_preds = it_model.predict_samples(dataset.X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
-        ale_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, expected_entropy(it_preds)))
-        epi_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, mutual_information(it_preds)))
+        ale_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood,
+                                                  expected_entropy(np.delete(it_preds, ood_class, axis=2))))
+        epi_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood,
+                                                  mutual_information(np.delete(it_preds, ood_class, axis=2))))
 
         K.clear_session()
         del it_model
@@ -68,8 +70,8 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
                                                             n_classes, epochs=epochs)
         pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE)
 
-        ale_gaussian_logits = uncertainty(pred_ale_std)
-        epi_gaussian_logits = uncertainty(pred_epi_std)
+        ale_gaussian_logits = uncertainty(np.delete(pred_ale_std, ood_class, axis=2))
+        epi_gaussian_logits = uncertainty(np.delete(pred_epi_std, ood_class, axis=2))
         ale_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, ale_gaussian_logits))
         epi_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, epi_gaussian_logits))
 

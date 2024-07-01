@@ -54,17 +54,47 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
     return gl_results, it_results
 
 
-def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False, normalise_uncertainties=True):
+def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False,
+                             normalise_uncertainties=True):
+    # results.changed_parameter_values = results.changed_parameter_values[1:]
+    # results.epistemic_uncertainties = results.epistemic_uncertainties[1:]
+    # results.aleatoric_uncertainties = results.aleatoric_uncertainties[1:]
+    # results.accuracies = results.accuracies[1:]
+
 
     if normalise_uncertainties:
-        ax.plot(results.changed_parameter_values, normalise(results.epistemic_uncertainties), label="Epistemic")
-        ax.plot(results.changed_parameter_values, normalise(results.aleatoric_uncertainties), label="Aleatoric")
+        scatter_alpha = 0.15
     else:
-        ax.plot(results.changed_parameter_values, results.epistemic_uncertainties, label="Epistemic")
-        ax.plot(results.changed_parameter_values, results.aleatoric_uncertainties, label="Aleatoric")
+        scatter_alpha = 1.0
+
+    if normalise_uncertainties:
+        ax.scatter(results.changed_parameter_values, normalise(results.epistemic_uncertainties), label="Epistemic", alpha=scatter_alpha)
+        ax.scatter(results.changed_parameter_values, normalise(results.aleatoric_uncertainties), label="Aleatoric", alpha=scatter_alpha)
+
+        z = np.polyfit(np.log(results.changed_parameter_values), normalise(results.epistemic_uncertainties), 1)
+        ax.plot(results.changed_parameter_values, np.poly1d(z)(np.log(results.changed_parameter_values)))
+
+        z = np.polyfit(np.log(results.changed_parameter_values), normalise(results.aleatoric_uncertainties), 1)
+        ax.plot(results.changed_parameter_values, np.poly1d(z)(np.log(results.changed_parameter_values)))
+
+    else:
+        ax.scatter(results.changed_parameter_values, results.epistemic_uncertainties, label="Epistemic")
+        ax.scatter(results.changed_parameter_values, results.aleatoric_uncertainties, label="Aleatoric")
+
+
+    # ax.set_xscale('log')
+
+    if normalise_uncertainties:
+        scatter_alpha = 0.15
+    else:
+        scatter_alpha = 1.0
     accuracy_axes = ax.twinx()
-    accuracy_axes.plot(results.changed_parameter_values, results.accuracies,
-                       label="Accuracy", color='green')
+    accuracy_axes.scatter(results.changed_parameter_values, results.accuracies,
+                          label="Accuracy", color='green', alpha=scatter_alpha)
+
+    if normalise_uncertainties:
+        z = np.polyfit(np.log(results.changed_parameter_values), results.accuracies, 1)
+        accuracy_axes.plot(results.changed_parameter_values, np.poly1d(z)(np.log(results.changed_parameter_values)), color='green')
 
     if is_final_column:
         accuracy_axes.set_ylabel("Accuracy", color='green')
@@ -81,15 +111,18 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
     accuracy_y_ax_to_share = None
 
     for arch_idx, architecture in enumerate(experiment_config.models):
-        TQDM.set_description(f"Running experiment  {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
+        TQDM.set_description(
+            f"Running experiment  {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
         gaussian_logits_results, it_results = None, None
         if from_folder:
             try:
                 gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
                                                                              meta_experiment_name=META_EXPERIMENT_NAME)
-                print(f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                print(
+                    f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
             except FileNotFoundError:
-                print(f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                print(
+                    f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
         if not gaussian_logits_results or not it_results:
             gaussian_logits_results, it_results = run_decreasing_dataset(
                 experiment_config.dataset, architecture.model_function, architecture.epochs)
@@ -118,9 +151,11 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         del it_results.changed_parameter_values[entry_to_ignore]
 
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
-                                                          accuracy_y_ax_to_share, is_final_column, normalise_uncertainties=True)
+                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          normalise_uncertainties=True)
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
-                                                          accuracy_y_ax_to_share, is_final_column, normalise_uncertainties=True)
+                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          normalise_uncertainties=True)
 
         axes[0][arch_idx].set_title(architecture.uq_name)
         axes[1][arch_idx].set_xlabel("Dataset size")

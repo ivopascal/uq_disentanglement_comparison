@@ -51,9 +51,6 @@ def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes
 
     train_model, pred_model = two_head_model(trunk_model, n_classes)
 
-    if TEST_MODE:
-        epochs = 1
-
     csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
     train_model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
     fin_model = DisentangledStochasticClassifier(pred_model, epi_num_samples=NUM_SAMPLES)

@@ -28,7 +28,7 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
 
     dataset_sizes = dataset_sizes[::-1]
 
-    X_train, y_train = shuffle(dataset.X_train, dataset.y_train, random_state=42)
+    X_train, y_train = shuffle(dataset.X_train, dataset.y_train)
     y_train = y_train.reshape(-1)
     for dataset_size in dataset_sizes:
         X_train_subs = []
@@ -42,7 +42,7 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
 
         X_train_sub = np.concatenate(X_train_subs)
         y_train_sub = np.concatenate(y_train_subs)
-        X_train_sub, y_train_sub = shuffle(X_train_sub, y_train_sub, random_state=44)
+        X_train_sub, y_train_sub = shuffle(X_train_sub, y_train_sub)
         small_dataset = Dataset(X_train_sub, y_train_sub, dataset.X_test, dataset.y_test)
 
         gl_results.append_values(*get_average_uncertainty_gaussian_logits(small_dataset, model_function, epochs),

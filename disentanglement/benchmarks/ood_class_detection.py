@@ -70,8 +70,8 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
                                                             n_classes, epochs=epochs)
         pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE)
 
-        ale_gaussian_logits = uncertainty(np.delete(pred_ale_std, ood_class, axis=2))
-        epi_gaussian_logits = uncertainty(np.delete(pred_epi_std, ood_class, axis=2))
+        ale_gaussian_logits = uncertainty(np.delete(pred_ale_std, ood_class, axis=1))
+        epi_gaussian_logits = uncertainty(np.delete(pred_epi_std, ood_class, axis=1))
         ale_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, ale_gaussian_logits))
         epi_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, epi_gaussian_logits))
 

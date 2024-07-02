@@ -13,13 +13,13 @@ from disentanglement.benchmarks.decreasing_dataset import plot_decreasing_datase
 from disentanglement.benchmarks.label_noise import label_noise
 from disentanglement.benchmarks.ood_class_detection import plot_ood_class_detection
 from disentanglement.experiment_configs import get_experiment_configs
-from disentanglement.settings import TEST_MODE
+from disentanglement.settings import TEST_MODE, GPU_INDEX
 
 warnings.filterwarnings("ignore")
 
 
 def main():
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = GPU_INDEX
     physical_devices = tf.config.list_physical_devices('GPU')
     plt.rcParams['axes.grid'] = False
     sns.reset_orig()

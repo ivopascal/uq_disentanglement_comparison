@@ -40,12 +40,6 @@ def get_blobs_dropout_architecture(prob=0.2, **_):
     model.add(StochasticDropout(prob))
     model.add(Dense(32, activation="relu"))
     model.add(StochasticDropout(prob))
-    model.add(Dense(32, activation="relu"))
-    model.add(StochasticDropout(prob))
-    model.add(Dense(32, activation="relu"))
-    model.add(StochasticDropout(prob))
-    model.add(Dense(32, activation="relu"))
-    model.add(StochasticDropout(prob))
     return model
 
 

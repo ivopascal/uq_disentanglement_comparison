@@ -43,9 +43,6 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    if TEST_MODE:
-        epochs = 1
-
     csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
     model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
     mc_model = StochasticClassifier(model)

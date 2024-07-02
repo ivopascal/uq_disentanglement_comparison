@@ -34,13 +34,12 @@ class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
         return prediction
 
 
-def get_blobs_dropout_architecture(prob=0.5, **_):
+def get_blobs_dropout_architecture(prob=0.2, **_):
     model = Sequential()
     model.add(Dense(32, activation="relu", input_shape=(2,)))
     model.add(StochasticDropout(prob))
     model.add(Dense(32, activation="relu"))
     model.add(StochasticDropout(prob))
-
     return model
 
 
@@ -60,7 +59,7 @@ def get_blobs_flipout_architecture(n_training_samples=N_BLOBS_TRAINING_SAMPLES):
     return model
 
 
-def get_blobs_ensemble_architecture(prob=0.5, **_):
+def get_blobs_ensemble_architecture(prob=0.2, **_):
     def model_fn():
         model = Sequential()
         model.add(Dense(32, activation="relu", input_shape=(2,)))
@@ -76,7 +75,7 @@ def get_blobs_ensemble_architecture(prob=0.5, **_):
     return ensemble_model
 
 
-def get_blobs_dropconnect_architecture(prob=0.5, **_):
+def get_blobs_dropconnect_architecture(prob=0.2, **_):
     model = Sequential()
     model.add(DropConnectDense(32, activation="relu", input_shape=(2,), prob=prob))
     model.add(DropConnectDense(32, activation="relu", prob=prob))

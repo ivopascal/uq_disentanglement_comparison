@@ -21,10 +21,11 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
     gl_results = UncertaintyResults()
     it_results = UncertaintyResults()
 
+    dataset_sizes = [0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1.0]
+
     if TEST_MODE:
         epochs = 2
-
-    dataset_sizes = np.logspace(start=0.0, stop=1, base=2, num=NUM_DECREASING_DATASET_STEPS) - 1
+        dataset_sizes = [0.1, 0.5]
 
     dataset_sizes = dataset_sizes[::-1]
 
@@ -33,6 +34,9 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
     for dataset_size in dataset_sizes:
         X_train_subs = []
         y_train_subs = []
+
+        adjusted_epochs = int(epochs / dataset_size)
+
         for y_value in np.unique(y_train):
             n_samples_per_class = int(np.sum((y_train == y_value)) * dataset_size)
             if n_samples_per_class == 0:
@@ -45,10 +49,10 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
         X_train_sub, y_train_sub = shuffle(X_train_sub, y_train_sub)
         small_dataset = Dataset(X_train_sub, y_train_sub, dataset.X_test, dataset.y_test)
 
-        gl_results.append_values(*get_average_uncertainty_gaussian_logits(small_dataset, model_function, epochs),
+        gl_results.append_values(*get_average_uncertainty_gaussian_logits(small_dataset, model_function, adjusted_epochs),
                                  dataset_size)
 
-        it_results.append_values(*get_average_uncertainty_it(small_dataset, model_function, epochs), dataset_size)
+        it_results.append_values(*get_average_uncertainty_it(small_dataset, model_function, adjusted_epochs), dataset_size)
         gc.collect()
 
     return gl_results, it_results

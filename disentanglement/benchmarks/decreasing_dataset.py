@@ -164,6 +164,7 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         axes[0][arch_idx].set_title(architecture.uq_name)
         axes[1][arch_idx].set_xlabel("Dataset size")
 
+
         if is_first_column:
             axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty (normalised)")
             axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty (normalised)")

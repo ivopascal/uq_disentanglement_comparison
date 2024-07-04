@@ -59,7 +59,7 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
 
 
 def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False,
-                             normalise_uncertainties=True):
+                             normalise_uncertainties=False):
     # results.changed_parameter_values = results.changed_parameter_values[1:]
     # results.epistemic_uncertainties = results.epistemic_uncertainties[1:]
     # results.aleatoric_uncertainties = results.aleatoric_uncertainties[1:]
@@ -156,10 +156,10 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
 
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
                                                           accuracy_y_ax_to_share, is_final_column,
-                                                          normalise_uncertainties=True)
+                                                          normalise_uncertainties=False)
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
                                                           accuracy_y_ax_to_share, is_final_column,
-                                                          normalise_uncertainties=True)
+                                                          normalise_uncertainties=False)
 
         axes[0][arch_idx].set_title(architecture.uq_name)
         axes[1][arch_idx].set_xlabel("Dataset size")

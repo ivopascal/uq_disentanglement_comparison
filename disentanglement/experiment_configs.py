@@ -128,23 +128,24 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         return get_test_mode_configs()
 
     return [
-        *[get_cifar10_config(meta_experiments=["decreasing_dataset",
-                                               "label_noise",
-                                               "ood_class"
-                                               ], run_index=i) for i in range(N_CIFAR_REPETITIONS)]
-        ,
+        # *[get_cifar10_config(meta_experiments=["decreasing_dataset",
+        #                                        "label_noise",
+        #                                        "ood_class"
+        #                                        ], run_index=i) for i in range(N_CIFAR_REPETITIONS)]
+        # ,
         get_cifar10_plotting_config(["decreasing_dataset",
                                      "label_noise",
-                                     "ood_class"]),
-        get_blobs_config(meta_experiments=["decreasing_dataset",
-                                           "label_noise",
-                                           ]),
-        *get_eeg_configs(meta_experiments=["decreasing_dataset",
-                                           "label_noise",
-                                           "ood_class"
-                                           ]),
-        get_eeg_plotting_config(meta_experiments=["decreasing_dataset",
-                                                  "label_noise",
-                                                  "ood_class"
-                                                  ])
+                                     # "ood_class"
+                                     ]),
+        # get_blobs_config(meta_experiments=["decreasing_dataset",
+        #                                    "label_noise",
+        #                                    ]),
+        # *get_eeg_configs(meta_experiments=["decreasing_dataset",
+        #                                    "label_noise",
+        #                                    "ood_class"
+        #                                    ]),
+        # get_eeg_plotting_config(meta_experiments=["decreasing_dataset",
+        #                                           "label_noise",
+        #                                           "ood_class"
+        #                                           ])
     ]

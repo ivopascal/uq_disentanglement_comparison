@@ -58,7 +58,7 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
         gaussian_logits_results, it_results = None, None
         if from_folder:
             try:
-                gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                gaussian_logits_results, it_results, gaussian_logits_std, it_std = load_results_from_file(experiment_config, architecture,
                                                                              meta_experiment_name=META_EXPERIMENT_NAME)
                 print(f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
 
@@ -67,6 +67,7 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
         if not gaussian_logits_results or not it_results:
             gaussian_logits_results, it_results = run_label_noise(experiment_config.dataset,
                                                                   architecture.model_function, architecture.epochs)
+            gaussian_logits_std, it_std = None, None
             save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
                                  meta_experiment_name=META_EXPERIMENT_NAME)
         if not os.path.exists(f"{FIGURE_FOLDER}/noise_dataset/"):
@@ -76,10 +77,10 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
         is_final_column = arch_idx == len(experiment_config.models) - 1
 
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
-                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          accuracy_y_ax_to_share, is_final_column, std=gaussian_logits_std,
                                                           normalise_uncertainties=False)
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
-                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          accuracy_y_ax_to_share, is_final_column, std=it_std,
                                                           normalise_uncertainties=False)
 
         axes[0][arch_idx].set_title(architecture.uq_name)

@@ -58,7 +58,7 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
     return gl_results, it_results
 
 
-def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False,
+def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False, std=None,
                              normalise_uncertainties=False):
     # results.changed_parameter_values = results.changed_parameter_values[1:]
     # results.epistemic_uncertainties = results.epistemic_uncertainties[1:]
@@ -72,8 +72,8 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
         scatter_alpha = 1.0
 
     if normalise_uncertainties:
-        ax.scatter(results.changed_parameter_values, normalise(results.epistemic_uncertainties), label="Epistemic", alpha=scatter_alpha)
-        ax.scatter(results.changed_parameter_values, normalise(results.aleatoric_uncertainties), label="Aleatoric", alpha=scatter_alpha)
+        ax.plot(results.changed_parameter_values, normalise(results.epistemic_uncertainties), label="Epistemic", alpha=scatter_alpha)
+        ax.plot(results.changed_parameter_values, normalise(results.aleatoric_uncertainties), label="Aleatoric", alpha=scatter_alpha)
 
         z = np.polyfit(np.log(results.changed_parameter_values), normalise(results.epistemic_uncertainties), 1)
         ax.plot(results.changed_parameter_values, np.poly1d(z)(np.log(results.changed_parameter_values)))
@@ -82,8 +82,17 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
         ax.plot(results.changed_parameter_values, np.poly1d(z)(np.log(results.changed_parameter_values)))
 
     else:
-        ax.scatter(results.changed_parameter_values, results.epistemic_uncertainties, label="Epistemic")
-        ax.scatter(results.changed_parameter_values, results.aleatoric_uncertainties, label="Aleatoric")
+        if std:
+            ax.fill_between(results.changed_parameter_values, np.array(results.epistemic_uncertainties) - 1.96 * np.array(std.epistemic_uncertainties),
+                            np.array(results.epistemic_uncertainties) + 1.96 * np.array(std.epistemic_uncertainties), alpha=0.3, label='Epistemic')
+            ax.fill_between(results.changed_parameter_values,
+                            np.array(results.aleatoric_uncertainties) - 1.96 * np.array(std.aleatoric_uncertainties),
+                            np.array(results.aleatoric_uncertainties) + 1.96 * np.array(std.aleatoric_uncertainties), alpha=0.3, label='Aleatoric')
+
+        ax.plot(results.changed_parameter_values, results.epistemic_uncertainties, label="Epistemic")
+        ax.plot(results.changed_parameter_values, results.aleatoric_uncertainties, label="Aleatoric")
+
+
 
 
     # ax.set_xscale('log')
@@ -93,8 +102,13 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
     else:
         scatter_alpha = 1.0
     accuracy_axes = ax.twinx()
-    accuracy_axes.scatter(results.changed_parameter_values, results.accuracies,
+    accuracy_axes.plot(results.changed_parameter_values, results.accuracies,
                           label="Accuracy", color='green', alpha=scatter_alpha)
+
+    if std:
+        accuracy_axes.fill_between(results.changed_parameter_values,
+                        np.array(results.accuracies) - 1.96 * np.array(std.accuracies),
+                        np.array(results.accuracies) + 1.96 * np.array(std.accuracies), alpha=0.3, color='green')
 
     if normalise_uncertainties:
         z = np.polyfit(np.log(results.changed_parameter_values), results.accuracies, 1)
@@ -120,7 +134,7 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         gaussian_logits_results, it_results = None, None
         if from_folder:
             try:
-                gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                gaussian_logits_results, it_results, gaussian_logits_results_std, it_results_std = load_results_from_file(experiment_config, architecture,
                                                                              meta_experiment_name=META_EXPERIMENT_NAME)
                 print(
                     f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
@@ -143,22 +157,22 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         is_first_column = arch_idx == 0
         is_final_column = arch_idx == len(experiment_config.models) - 1
 
-        entry_to_ignore = np.argmin(gaussian_logits_results.changed_parameter_values)
-        del gaussian_logits_results.accuracies[entry_to_ignore]
-        del gaussian_logits_results.epistemic_uncertainties[entry_to_ignore]
-        del gaussian_logits_results.aleatoric_uncertainties[entry_to_ignore]
-        del gaussian_logits_results.changed_parameter_values[entry_to_ignore]
-
-        del it_results.accuracies[entry_to_ignore]
-        del it_results.epistemic_uncertainties[entry_to_ignore]
-        del it_results.aleatoric_uncertainties[entry_to_ignore]
-        del it_results.changed_parameter_values[entry_to_ignore]
+        # entry_to_ignore = np.argmin(gaussian_logits_results.changed_parameter_values)
+        # del gaussian_logits_results.accuracies[entry_to_ignore]
+        # del gaussian_logits_results.epistemic_uncertainties[entry_to_ignore]
+        # del gaussian_logits_results.aleatoric_uncertainties[entry_to_ignore]
+        # del gaussian_logits_results.changed_parameter_values[entry_to_ignore]
+        #
+        # del it_results.accuracies[entry_to_ignore]
+        # del it_results.epistemic_uncertainties[entry_to_ignore]
+        # del it_results.aleatoric_uncertainties[entry_to_ignore]
+        # del it_results.changed_parameter_values[entry_to_ignore]
 
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
-                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          accuracy_y_ax_to_share, is_final_column, std=gaussian_logits_results_std,
                                                           normalise_uncertainties=False)
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
-                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          accuracy_y_ax_to_share, is_final_column, std=it_results_std,
                                                           normalise_uncertainties=False)
 
         axes[0][arch_idx].set_title(architecture.uq_name)
@@ -166,8 +180,8 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
 
 
         if is_first_column:
-            axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty (normalised)")
-            axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty (normalised)")
+            axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty")
+            axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty")
 
         if is_final_column:
             axes[0][arch_idx].legend()

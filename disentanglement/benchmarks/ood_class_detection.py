@@ -5,7 +5,7 @@ from typing import Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.metrics import roc_curve, accuracy_score
+from sklearn.metrics import roc_curve, accuracy_score, auc
 
 import keras.backend as K
 
@@ -99,6 +99,8 @@ def plot_roc_on_ax(ax, aleatoric_tpr, epistemic_tpr, base_fpr):
     ax.plot(base_fpr, epistemic_tpr, label="Epistemic")
     ax.plot(base_fpr, base_fpr, color='black', linestyle='dashed')
 
+    return auc(base_fpr, aleatoric_tpr), auc(base_fpr, epistemic_tpr)
+
 
 def plot_ood_class_detection(experiment_config, from_folder=None):
     if not os.path.exists(f"{FIGURE_FOLDER}/ood_class/"):
@@ -125,10 +127,10 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
             save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
                                  meta_experiment_name=META_EXPERIMENT_NAME)
 
-        plot_roc_on_ax(axes[0][arch_idx], gaussian_logits_results.aleatoric_uncertainties,
+        gl_ale_auc, gl_epi_auc = plot_roc_on_ax(axes[0][arch_idx], gaussian_logits_results.aleatoric_uncertainties,
                        gaussian_logits_results.epistemic_uncertainties,
                        gaussian_logits_results.changed_parameter_values)
-        plot_roc_on_ax(axes[1][arch_idx], it_results.aleatoric_uncertainties, it_results.epistemic_uncertainties,
+        it_ale_auc, it_epi_auc =plot_roc_on_ax(axes[1][arch_idx], it_results.aleatoric_uncertainties, it_results.epistemic_uncertainties,
                        it_results.changed_parameter_values)
 
         axes[0][arch_idx].set_title(architecture.uq_name)
@@ -140,6 +142,11 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
 
         if arch_idx == len(experiment_config.models) - 1:
             axes[0][arch_idx].legend(loc="lower right")
+
+        print(f"{architecture.uq_name}")
+        print(f"GL Ale \t\t GL Epi \t IT Ale \t IT Epi")
+
+        print(f"{gl_ale_auc:.3} & \t {gl_epi_auc:.3} & \t {it_ale_auc:.3} & \t {it_epi_auc:.3}")
 
     fig.suptitle(f"ROC curves for OOD detection for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()

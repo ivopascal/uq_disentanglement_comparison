@@ -5,7 +5,7 @@ from typing import Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.metrics import roc_curve, accuracy_score
+from sklearn.metrics import roc_curve, accuracy_score, auc
 
 import keras.backend as K
 
@@ -94,10 +94,12 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
     return gl_results, it_results
 
 
-def plot_roc_on_ax(ax, aleatoric_tpr, epistemic_tpr, base_fpr):
+def plot_roc_on_ax(ax, aleatoric_tpr, epistemic_tpr, base_fpr, ale_std=None, epi_std=None):
     ax.plot(base_fpr, aleatoric_tpr, label="Aleatoric")
     ax.plot(base_fpr, epistemic_tpr, label="Epistemic")
     ax.plot(base_fpr, base_fpr, color='black', linestyle='dashed')
+
+    return auc(base_fpr, aleatoric_tpr), auc(base_fpr, epistemic_tpr)
 
 
 def plot_ood_class_detection(experiment_config, from_folder=None):
@@ -112,7 +114,7 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
         gaussian_logits_results, it_results = None, None
         if from_folder:
             try:
-                gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
+                gaussian_logits_results, it_results, gaussian_logits_std, it_std = load_results_from_file(experiment_config, architecture,
                                                                              meta_experiment_name=META_EXPERIMENT_NAME)
                 print(f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
 
@@ -122,14 +124,18 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
             gaussian_logits_results, it_results = run_ood_class_detection(experiment_config.dataset,
                                                                           architecture.model_function,
                                                                           architecture.epochs)
+            gaussian_logits_std = None
+            it_std = None
             save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
                                  meta_experiment_name=META_EXPERIMENT_NAME)
 
-        plot_roc_on_ax(axes[0][arch_idx], gaussian_logits_results.aleatoric_uncertainties,
+        gl_ale_auc, gl_epi_auc = plot_roc_on_ax(axes[0][arch_idx], gaussian_logits_results.aleatoric_uncertainties,
                        gaussian_logits_results.epistemic_uncertainties,
-                       gaussian_logits_results.changed_parameter_values)
-        plot_roc_on_ax(axes[1][arch_idx], it_results.aleatoric_uncertainties, it_results.epistemic_uncertainties,
-                       it_results.changed_parameter_values)
+                       gaussian_logits_results.changed_parameter_values,
+                       ale_std=gaussian_logits_std.aleatoric_uncertainties, epi_std=gaussian_logits_std.epistemic_uncertainties)
+        it_ale_auc, it_epi_auc = plot_roc_on_ax(axes[1][arch_idx], it_results.aleatoric_uncertainties, it_results.epistemic_uncertainties,
+                       it_results.changed_parameter_values,
+                       ale_std=it_std.aleatoric_uncertainties, epi_std=it_std.epistemic_uncertainties)
 
         axes[0][arch_idx].set_title(architecture.uq_name)
         axes[1][arch_idx].set_xlabel("False Positive Rate")
@@ -141,7 +147,12 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
         if arch_idx == len(experiment_config.models) - 1:
             axes[0][arch_idx].legend(loc="lower right")
 
-    fig.suptitle(f"ROC curves for OOD detection for {experiment_config.dataset_name}", fontsize=20)
+        print(f"{architecture.uq_name}")
+        print(f"GL Ale \t\t GL Epi \t IT Ale \t IT Epi")
+
+        print(f"{gl_ale_auc:.3} & \t {gl_epi_auc:.3} & \t {it_ale_auc:.3} & \t {it_epi_auc:.3}")
+
+    # fig.suptitle(f"ROC curves for OOD detection for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()
 
     if TEST_MODE:

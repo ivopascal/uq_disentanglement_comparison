@@ -37,13 +37,15 @@ def load_and_combine_multiple_logs(experiment_config, architecture, meta_experim
             print(f"Failed to find data for log {log_id}. Skipping...")
 
     gaussian_logit_df = pd.concat(gaussian_logit_dfs)
+    gaussian_logit_df_std = gaussian_logit_df.groupby(gaussian_logit_df.index).sem()
     gaussian_logit_df = gaussian_logit_df.groupby(gaussian_logit_df.index).mean()
 
     it_df = pd.concat(it_dfs)
+    it_df_std = it_df.groupby(it_df.index).sem()
     it_df = it_df.groupby(it_df.index).mean()
 
     return (UncertaintyResults(**gaussian_logit_df.to_dict(orient='list')),
-            UncertaintyResults(**it_df.to_dict(orient='list')))
+            UncertaintyResults(**it_df.to_dict(orient='list')), UncertaintyResults(**gaussian_logit_df_std.to_dict(orient='list')), UncertaintyResults(**it_df_std.to_dict(orient='list')))
 
 
 def save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results, meta_experiment_name):

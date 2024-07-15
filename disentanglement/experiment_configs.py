@@ -10,7 +10,7 @@ from disentanglement.models.architectures import get_blobs_dropout_architecture,
     get_cifar10_dropconnect_architecture, \
     get_cifar10_ensemble_architecture, get_eeg_dropout_architecture, get_eeg_dropconnect_architecture, \
     get_eeg_flipout_architecture, get_eeg_ensemble_architecture
-from disentanglement.settings import TEST_MODE
+from disentanglement.settings import TEST_MODE, N_CIFAR_REPETITIONS
 
 
 def get_test_mode_configs() -> List[ExperimentConfig]:
@@ -55,9 +55,9 @@ def get_test_mode_configs() -> List[ExperimentConfig]:
     ]
 
 
-def get_cifar10_config(meta_experiments=[]) -> ExperimentConfig:
+def get_cifar10_config(meta_experiments=[], run_index=1) -> ExperimentConfig:
     return ExperimentConfig(
-        dataset_name="CIFAR10",
+        dataset_name=f"CIFAR10 {run_index}",
         dataset=get_train_test_cifar_10(),
         models=[UqModel(get_cifar10_dropout_architecture, "MC-Dropout", epochs=100),
                 UqModel(get_cifar10_dropconnect_architecture, "MC-DropConnect", epochs=100),
@@ -65,6 +65,17 @@ def get_cifar10_config(meta_experiments=[]) -> ExperimentConfig:
                 UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
                 ],
         meta_experiments=meta_experiments,
+    )
+
+
+def get_cifar10_plotting_config(meta_experiments=[]) -> ExperimentConfig:
+    models = get_cifar10_config(run_index=0, meta_experiments=meta_experiments).models
+
+    return ExperimentConfig(
+        dataset_name="CIFAR10",
+        dataset=None,
+        models=models,
+        meta_experiments=meta_experiments
     )
 
 
@@ -117,10 +128,15 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         return get_test_mode_configs()
 
     return [
-        get_cifar10_config(meta_experiments=[# "decreasing_dataset",
-                                             # "label_noise",
-                                             "ood_class"
-                                             ]),
+        *[get_cifar10_config(meta_experiments=["decreasing_dataset",
+                                               "label_noise",
+                                               "ood_class"
+                                               ], run_index=i) for i in range(N_CIFAR_REPETITIONS)]
+        ,
+        get_cifar10_plotting_config(["decreasing_dataset",
+                                     "label_noise",
+                                     "ood_class"
+                                     ]),
         # get_blobs_config(meta_experiments=["decreasing_dataset",
         #                                    "label_noise",
         #                                    ]),

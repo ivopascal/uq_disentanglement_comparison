@@ -4,6 +4,7 @@ from datetime import datetime
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
 from sklearn.utils import shuffle
 
 from disentanglement.datatypes import UncertaintyResults, Dataset
@@ -84,13 +85,13 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
     else:
         if std:
             ax.fill_between(results.changed_parameter_values, np.array(results.epistemic_uncertainties) - 1.96 * np.array(std.epistemic_uncertainties),
-                            np.array(results.epistemic_uncertainties) + 1.96 * np.array(std.epistemic_uncertainties), alpha=0.3, label='Epistemic')
+                            np.array(results.epistemic_uncertainties) + 1.96 * np.array(std.epistemic_uncertainties), alpha=0.3, label='_Epi')
             ax.fill_between(results.changed_parameter_values,
                             np.array(results.aleatoric_uncertainties) - 1.96 * np.array(std.aleatoric_uncertainties),
-                            np.array(results.aleatoric_uncertainties) + 1.96 * np.array(std.aleatoric_uncertainties), alpha=0.3, label='Aleatoric')
+                            np.array(results.aleatoric_uncertainties) + 1.96 * np.array(std.aleatoric_uncertainties), alpha=0.3, label='_Ale')
 
-        ax.plot(results.changed_parameter_values, results.epistemic_uncertainties, label="Epistemic")
-        ax.plot(results.changed_parameter_values, results.aleatoric_uncertainties, label="Aleatoric")
+        ax.plot(results.changed_parameter_values, results.epistemic_uncertainties, label="Epi")
+        ax.plot(results.changed_parameter_values, results.aleatoric_uncertainties, label="Ale")
 
 
 
@@ -127,6 +128,8 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
 def plot_decreasing_dataset(experiment_config, from_folder=False):
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
     accuracy_y_ax_to_share = None
+    font_size = 14
+    plt.rcParams['font.size'] = font_size
 
     for arch_idx, architecture in enumerate(experiment_config.models):
         TQDM.set_description(
@@ -175,19 +178,26 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
                                                           accuracy_y_ax_to_share, is_final_column, std=it_results_std,
                                                           normalise_uncertainties=False)
 
-        axes[0][arch_idx].set_title(architecture.uq_name)
-        axes[1][arch_idx].set_xlabel("Dataset size")
+        axes[0][arch_idx].set_title(architecture.uq_name, fontsize=font_size)
+        axes[1][arch_idx].set_xlabel("Dataset size", fontsize=font_size)
 
 
         if is_first_column:
-            axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty")
-            axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty")
+            axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty", fontsize=font_size)
+            axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty", fontsize=font_size)
 
-        if is_final_column:
-            axes[0][arch_idx].legend()
+            handles, labels = axes[0][arch_idx].get_legend_handles_labels()
 
-    fig.suptitle(f"Disentangled uncertainty over decreasing dataset sizes for {experiment_config.dataset_name}",
-                 fontsize=20)
+            labels.append("Acc")
+            line = Line2D([0], [0], label='Acc', color='green')
+            handles.append(line)
+
+            axes[0][arch_idx].legend(handles=handles, labels=labels, loc='upper left', fontsize=10)
+
+
+
+    # fig.suptitle(f"Disentangled uncertainty over decreasing dataset sizes for {experiment_config.dataset_name}",
+    #              fontsize=20)
     fig.tight_layout()
 
     if TEST_MODE:

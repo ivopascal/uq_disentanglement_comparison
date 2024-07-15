@@ -4,6 +4,7 @@ from datetime import datetime
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
 from sklearn.utils import shuffle
 
 from disentanglement.benchmarks.decreasing_dataset import plot_ale_epi_acc_on_axes
@@ -51,6 +52,9 @@ def run_label_noise(dataset: Dataset, architecture_func, epochs):
 
 def label_noise(experiment_config: ExperimentConfig, from_folder=False):
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
+    plt.rcParams['font.size'] = 14
+
+
     accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
         TQDM.set_description(f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
@@ -89,10 +93,15 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
             axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty")
             axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty")
 
-        if is_final_column:
-            axes[0][arch_idx].legend()
+            handles, labels = axes[0][arch_idx].get_legend_handles_labels()
 
-    fig.suptitle(f"Disentangled uncertainty over shuffled labels for {experiment_config.dataset_name}", fontsize=20)
+            labels.append("Acc")
+            line = Line2D([0], [0], label='Acc', color='green')
+            handles.append(line)
+
+            axes[0][arch_idx].legend(handles=handles, labels=labels, loc='upper left', fontsize=10)
+
+    # fig.suptitle(f"Disentangled uncertainty over shuffled labels for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()
 
     if TEST_MODE:

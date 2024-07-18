@@ -99,6 +99,7 @@ def get_cifar10_plotting_config(meta_experiments=[]) -> ExperimentConfig:
         meta_experiments=meta_experiments
     )
 
+
 def get_fashion_mnist_plotting_config(meta_experiments=[]) -> ExperimentConfig:
     models = get_fashion_mnist_configs(run_index=0, meta_experiments=meta_experiments).models
 
@@ -179,10 +180,10 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         #                                           "ood_class"
         #                                           ])
         *[get_fashion_mnist_configs(meta_experiments=["decreasing_dataset",
-                                                    "label_noise",
-                                                    "ood_class"
-                                                    ], run_index=i) for i in range(N_CIFAR_REPETITIONS)],
-        get_fashion_mnist_plotting_config(["decreasing_dataset",
-                                     "label_noise",
-                                     "ood_class"])
+                                                      # "label_noise",
+                                                      # "ood_class"
+                                                      ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::-1],
+        # get_fashion_mnist_plotting_config(["decreasing_dataset",
+        #                                    "label_noise",
+        #                                    "ood_class"])
     ]

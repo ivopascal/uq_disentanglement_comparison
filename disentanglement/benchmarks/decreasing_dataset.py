@@ -153,6 +153,7 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         if TEST_MODE:  # Check if it's possible to load data from disk
             gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
                                                                          meta_experiment_name=META_EXPERIMENT_NAME)
+            gaussian_logits_results_std, it_results_std = None, None
 
         if not os.path.exists(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/"):
             os.mkdir(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/")

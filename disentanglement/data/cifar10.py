@@ -19,3 +19,19 @@ def get_train_test_cifar_10() -> Dataset:
     y_test = y_test[:n_test_samples]
 
     return Dataset(x_train, y_train, x_test, y_test)
+
+
+def get_train_test_fashion_mnist() -> Dataset:
+    (x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
+    x_train, x_test = x_train / 255.0, x_test / 255.0
+
+    if TEST_MODE:
+        n_test_samples = 100
+    else:
+        n_test_samples = N_CIFAR10_TEST_SAMPLES
+
+    x_test = x_test[:n_test_samples]
+    y_test = y_test[:n_test_samples]
+
+    return Dataset(x_train, y_train, x_test, y_test)
+

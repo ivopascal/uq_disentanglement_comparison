@@ -99,6 +99,14 @@ def plot_roc_on_ax(ax, aleatoric_tpr, epistemic_tpr, base_fpr, ale_std=None, epi
     ax.plot(base_fpr, epistemic_tpr, label="Epistemic")
     ax.plot(base_fpr, base_fpr, color='black', linestyle='dashed')
 
+    if ale_std and epi_std:
+        ale_auc = auc(base_fpr, aleatoric_tpr)
+        epi_auc = auc(base_fpr, epistemic_tpr)
+
+        ale_auc_std = auc(base_fpr, np.add(ale_std, aleatoric_tpr)) - ale_auc
+        epi_auc_std = auc(base_fpr, np.add(epi_std, epistemic_tpr)) - epi_auc
+        return ale_auc, epi_auc, ale_auc_std, epi_auc_std
+
     return auc(base_fpr, aleatoric_tpr), auc(base_fpr, epistemic_tpr)
 
 
@@ -129,11 +137,11 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
             save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
                                  meta_experiment_name=META_EXPERIMENT_NAME)
 
-        gl_ale_auc, gl_epi_auc = plot_roc_on_ax(axes[0][arch_idx], gaussian_logits_results.aleatoric_uncertainties,
+        gl_ale_auc, gl_epi_auc, gl_ale_auc_std, gl_epi_auc_std = plot_roc_on_ax(axes[0][arch_idx], gaussian_logits_results.aleatoric_uncertainties,
                        gaussian_logits_results.epistemic_uncertainties,
                        gaussian_logits_results.changed_parameter_values,
                        ale_std=gaussian_logits_std.aleatoric_uncertainties, epi_std=gaussian_logits_std.epistemic_uncertainties)
-        it_ale_auc, it_epi_auc = plot_roc_on_ax(axes[1][arch_idx], it_results.aleatoric_uncertainties, it_results.epistemic_uncertainties,
+        it_ale_auc, it_epi_auc, it_ale_auc_std, it_epi_auc_std = plot_roc_on_ax(axes[1][arch_idx], it_results.aleatoric_uncertainties, it_results.epistemic_uncertainties,
                        it_results.changed_parameter_values,
                        ale_std=it_std.aleatoric_uncertainties, epi_std=it_std.epistemic_uncertainties)
 
@@ -150,7 +158,7 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
         print(f"{architecture.uq_name}")
         print(f"GL Ale \t\t GL Epi \t IT Ale \t IT Epi")
 
-        print(f"{gl_ale_auc:.3} & \t {gl_epi_auc:.3} & \t {it_ale_auc:.3} & \t {it_epi_auc:.3}")
+        print(f"{gl_ale_auc:.3} \pm {gl_ale_auc_std:.4} & \t {gl_epi_auc:.3} \pm {gl_epi_auc_std:.4} & \t {it_ale_auc:.3} \pm {it_ale_auc_std:.4} & \t {it_epi_auc:.3} \pm {it_epi_auc_std:.4}")
 
     # fig.suptitle(f"ROC curves for OOD detection for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()

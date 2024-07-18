@@ -109,9 +109,9 @@ def get_eeg_convolutional_blocks(channels=22, samples=513):
     return model
 
 
-def get_cifar10_convolutional_blocks():
+def get_cifar10_convolutional_blocks(input_shape=(32, 32, 3)):
     model = Sequential()
-    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
     model.add(MaxPooling2D((2, 2)))
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(MaxPooling2D((2, 2)))
@@ -119,6 +119,10 @@ def get_cifar10_convolutional_blocks():
     model.add(Flatten())
 
     return model
+
+
+def get_fashion_mnist_convolutional_blocks():
+    return get_cifar10_convolutional_blocks(input_shape=(28, 28, 1))
 
 
 def get_dropout_from_backbone(backbone_func, prob=0.3, hidden_size=64, **_):
@@ -180,6 +184,23 @@ def get_cifar10_dropconnect_architecture(**_):
 
 def get_cifar10_ensemble_architecture(**_):
     return get_ensemble_from_backbone(get_cifar10_convolutional_blocks, hidden_size=64)
+
+
+def get_fashion_mnist_flipout_architecture(n_training_samples):
+    return get_flipout_from_backbone(get_fashion_mnist_convolutional_blocks, hidden_size=64,
+                                     n_training_samples=n_training_samples)
+
+
+def get_fashion_mnist_dropout_architecture(**_):
+    return get_dropout_from_backbone(get_fashion_mnist_convolutional_blocks, hidden_size=64)
+
+
+def get_fashion_mnist_dropconnect_architecture(**_):
+    return get_dropconnect_from_backbone(get_fashion_mnist_convolutional_blocks, hidden_size=64)
+
+
+def get_fashion_mnist_ensemble_architecture(**_):
+    return get_ensemble_from_backbone(get_fashion_mnist_convolutional_blocks, hidden_size=64)
 
 
 def get_eeg_flipout_architecture(n_training_samples, **_):

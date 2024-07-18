@@ -65,7 +65,7 @@ def get_test_mode_configs() -> List[ExperimentConfig]:
 
 def get_fashion_mnist_configs(meta_experiments=[], run_index=1) -> ExperimentConfig:
     return ExperimentConfig(
-        dataset_name=f"Fashion MNIST",
+        dataset_name=f"Fashion MNIST {run_index}",
         dataset=get_train_test_fashion_mnist(),
         models=[UqModel(get_fashion_mnist_dropout_architecture, "MC-Dropout", epochs=100),
                 UqModel(get_fashion_mnist_dropconnect_architecture, "MC-DropConnect", epochs=100),
@@ -94,6 +94,16 @@ def get_cifar10_plotting_config(meta_experiments=[]) -> ExperimentConfig:
 
     return ExperimentConfig(
         dataset_name="CIFAR10",
+        dataset=None,
+        models=models,
+        meta_experiments=meta_experiments
+    )
+
+def get_fashion_mnist_plotting_config(meta_experiments=[]) -> ExperimentConfig:
+    models = get_fashion_mnist_configs(run_index=0, meta_experiments=meta_experiments).models
+
+    return ExperimentConfig(
+        dataset_name="Fashion MNIST",
         dataset=None,
         models=models,
         meta_experiments=meta_experiments
@@ -168,8 +178,11 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         #                                           "label_noise",
         #                                           "ood_class"
         #                                           ])
-        get_fashion_mnist_configs(meta_experiments=["decreasing_dataset",
+        *[get_fashion_mnist_configs(meta_experiments=["decreasing_dataset",
                                                     "label_noise",
                                                     "ood_class"
-                                                    ]),
+                                                    ], run_index=i) for i in range(N_CIFAR_REPETITIONS)],
+        get_fashion_mnist_plotting_config(["decreasing_dataset",
+                                     "label_noise",
+                                     "ood_class"])
     ]

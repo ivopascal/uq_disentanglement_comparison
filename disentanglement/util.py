@@ -81,4 +81,4 @@ def load_results_from_file(experiment_config, architecture, meta_experiment_name
                         f"{experiment_config.dataset_name}_{architecture.uq_name}_"
                         f"it_results{get_test_append()}.csv")
     it_results = UncertaintyResults(**df_it.to_dict(orient='list'))
-    return gaussian_logits_results, it_results
+    return gaussian_logits_results, it_results, None, None

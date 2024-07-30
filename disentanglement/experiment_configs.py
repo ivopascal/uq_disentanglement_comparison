@@ -238,10 +238,10 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         # get_fashion_mnist_plotting_config(["decreasing_dataset",
         #                                    "label_noise",
         #                                    "ood_class"])
-        *[get_wine_config(meta_experiments=["decreasing_dataset",
-                                            "label_noise",
+        *[get_wine_config(meta_experiments=[# "decreasing_dataset",
+                                            # "label_noise",
                                             "ood_class"
-                                            ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::1],
+                                            ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::-1],
         get_wine_plotting_config(["decreasing_dataset",
                                   "label_noise",
                                   "ood_class"])

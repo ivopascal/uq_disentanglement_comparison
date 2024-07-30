@@ -149,7 +149,7 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
                 experiment_config.dataset, architecture.model_function, architecture.epochs)
             save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
                                  meta_experiment_name=META_EXPERIMENT_NAME)
-            gaussian_logits_results_std, it_results_std = None, Nonec
+            gaussian_logits_results_std, it_results_std = None, None
 
         if TEST_MODE:  # Check if it's possible to load data from disk
             gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,

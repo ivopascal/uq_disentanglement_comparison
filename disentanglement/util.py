@@ -69,7 +69,7 @@ def load_results_from_file(experiment_config, architecture, meta_experiment_name
     if experiment_config.dataset_name == "Motor Imagery BCI":
         return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name, n_logs=N_EEG_SUBJECTS)
 
-    if experiment_config.dataset_name == "CIFAR10" or experiment_config.dataset_name == "Fashion MNIST":
+    if experiment_config.dataset_name == "CIFAR10" or experiment_config.dataset_name == "Fashion MNIST" or experiment_config.dataset_name == "Wine":
         return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name, n_logs=N_CIFAR_REPETITIONS)
 
     df_gaussian_logits = pd.read_csv(f"{DATA_FOLDER}/{meta_experiment_name}/{meta_experiment_name}_"

@@ -1,5 +1,5 @@
 import numpy as np
-from keras import Sequential
+from keras import Sequential, Input
 from keras.src.constraints import max_norm
 from keras.src.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout, Activation, BatchNormalization, \
     AveragePooling2D
@@ -125,6 +125,16 @@ def get_fashion_mnist_convolutional_blocks():
     return get_cifar10_convolutional_blocks(input_shape=(28, 28, 1))
 
 
+def get_wine_backbone(input_shape=13):
+    model = Sequential()
+    model.add(Input(input_shape))
+    model.add(Dense(32))
+    model.add(Dense(32))
+
+    return model
+
+
+
 def get_dropout_from_backbone(backbone_func, prob=0.3, hidden_size=64, **_):
     model = backbone_func()
     model.add(Dense(hidden_size, activation='relu'))
@@ -201,6 +211,23 @@ def get_fashion_mnist_dropconnect_architecture(**_):
 
 def get_fashion_mnist_ensemble_architecture(**_):
     return get_ensemble_from_backbone(get_fashion_mnist_convolutional_blocks, hidden_size=64)
+
+
+def get_wine_flipout_architecture(n_training_samples):
+    return get_flipout_from_backbone(get_wine_backbone, hidden_size=16,
+                                     n_training_samples=n_training_samples)
+
+
+def get_wine_dropout_architecture(**_):
+    return get_dropout_from_backbone(get_wine_backbone, hidden_size=16)
+
+
+def get_wine_dropconnect_architecture(**_):
+    return get_dropconnect_from_backbone(get_wine_backbone, hidden_size=16)
+
+
+def get_wine_ensemble_architecture(**_):
+    return get_ensemble_from_backbone(get_wine_backbone, hidden_size=16)
 
 
 def get_eeg_flipout_architecture(n_training_samples, **_):

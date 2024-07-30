@@ -1,9 +1,9 @@
 from typing import List
 
 from disentanglement.data.blobs import get_train_test_blobs
-from disentanglement.data.cifar10 import get_train_test_cifar_10, get_train_test_fashion_mnist
-from disentanglement.data.eeg import get_eeg_data, N_EEG_SUBJECTS
-from disentanglement.datatypes import UqModel, ExperimentConfig, Dataset
+from disentanglement.data.cifar10 import get_train_test_cifar_10, get_train_test_fashion_mnist, get_train_test_wine
+from disentanglement.data.eeg import get_eeg_data
+from disentanglement.datatypes import UqModel, ExperimentConfig
 from disentanglement.models.architectures import get_blobs_dropout_architecture, \
     get_blobs_dropconnect_architecture, get_blobs_ensemble_architecture, \
     get_blobs_flipout_architecture, get_cifar10_flipout_architecture, get_cifar10_dropout_architecture, \
@@ -11,7 +11,8 @@ from disentanglement.models.architectures import get_blobs_dropout_architecture,
     get_cifar10_ensemble_architecture, get_eeg_dropout_architecture, get_eeg_dropconnect_architecture, \
     get_eeg_flipout_architecture, get_eeg_ensemble_architecture, get_fashion_mnist_dropconnect_architecture, \
     get_fashion_mnist_dropout_architecture, get_fashion_mnist_flipout_architecture, \
-    get_fashion_mnist_ensemble_architecture
+    get_fashion_mnist_ensemble_architecture, get_wine_dropout_architecture, get_wine_dropconnect_architecture, \
+    get_wine_flipout_architecture, get_wine_ensemble_architecture
 from disentanglement.settings import TEST_MODE, N_CIFAR_REPETITIONS
 
 
@@ -63,7 +64,9 @@ def get_test_mode_configs() -> List[ExperimentConfig]:
     ]
 
 
-def get_fashion_mnist_configs(meta_experiments=[], run_index=1) -> ExperimentConfig:
+def get_fashion_mnist_configs(meta_experiments=None, run_index=1) -> ExperimentConfig:
+    if meta_experiments is None:
+        meta_experiments = []
     return ExperimentConfig(
         dataset_name=f"Fashion MNIST {run_index}",
         dataset=get_train_test_fashion_mnist(),
@@ -76,7 +79,38 @@ def get_fashion_mnist_configs(meta_experiments=[], run_index=1) -> ExperimentCon
     )
 
 
-def get_cifar10_config(meta_experiments=[], run_index=1) -> ExperimentConfig:
+def get_wine_config(meta_experiments=None, run_index=1) -> ExperimentConfig:
+    if meta_experiments is None:
+        meta_experiments = []
+    return ExperimentConfig(
+        dataset_name=f"Wine {run_index}",
+        dataset=get_train_test_wine(),
+        models=[UqModel(get_wine_dropout_architecture, "MC-Dropout", epochs=100),
+                UqModel(get_wine_dropconnect_architecture, "MC-DropConnect", epochs=100),
+                UqModel(get_wine_flipout_architecture, "Flipout", epochs=500),
+                UqModel(get_wine_ensemble_architecture, "Deep Ensemble", epochs=100),
+                ],
+        meta_experiments=meta_experiments,
+    )
+
+
+def get_wine_plotting_config(meta_experiments=None) -> ExperimentConfig:
+    if meta_experiments is None:
+        meta_experiments = []
+    models = get_wine_config(run_index=0, meta_experiments=meta_experiments).models
+
+    return ExperimentConfig(
+        dataset_name="Wine",
+        dataset=None,
+        models=models,
+        meta_experiments=meta_experiments
+    )
+
+
+def get_cifar10_config(meta_experiments=None, run_index=1) -> ExperimentConfig:
+    if meta_experiments is None:
+        meta_experiments = []
+
     return ExperimentConfig(
         dataset_name=f"CIFAR10 {run_index}",
         dataset=get_train_test_cifar_10(),
@@ -89,7 +123,10 @@ def get_cifar10_config(meta_experiments=[], run_index=1) -> ExperimentConfig:
     )
 
 
-def get_cifar10_plotting_config(meta_experiments=[]) -> ExperimentConfig:
+def get_cifar10_plotting_config(meta_experiments=None) -> ExperimentConfig:
+    if meta_experiments is None:
+        meta_experiments = []
+
     models = get_cifar10_config(run_index=0, meta_experiments=meta_experiments).models
 
     return ExperimentConfig(
@@ -100,7 +137,10 @@ def get_cifar10_plotting_config(meta_experiments=[]) -> ExperimentConfig:
     )
 
 
-def get_fashion_mnist_plotting_config(meta_experiments=[]) -> ExperimentConfig:
+def get_fashion_mnist_plotting_config(meta_experiments=None) -> ExperimentConfig:
+    if meta_experiments is None:
+        meta_experiments = []
+
     models = get_fashion_mnist_configs(run_index=0, meta_experiments=meta_experiments).models
 
     return ExperimentConfig(
@@ -111,7 +151,10 @@ def get_fashion_mnist_plotting_config(meta_experiments=[]) -> ExperimentConfig:
     )
 
 
-def get_blobs_config(meta_experiments=[]) -> ExperimentConfig:
+def get_blobs_config(meta_experiments=None) -> ExperimentConfig:
+    if meta_experiments is None:
+        meta_experiments = []
+
     return ExperimentConfig(
         dataset_name="blobs",
         dataset=get_train_test_blobs(),
@@ -124,7 +167,10 @@ def get_blobs_config(meta_experiments=[]) -> ExperimentConfig:
     )
 
 
-def get_eeg_config_single_subject(subject_id, meta_experiments=[]) -> ExperimentConfig:
+def get_eeg_config_single_subject(subject_id, meta_experiments=None) -> ExperimentConfig:
+    if meta_experiments is None:
+        meta_experiments = []
+
     return ExperimentConfig(
         dataset_name=f"Motor Imagery BCI {subject_id}",
         dataset=get_eeg_data(subject_id),
@@ -139,7 +185,10 @@ def get_eeg_config_single_subject(subject_id, meta_experiments=[]) -> Experiment
     )
 
 
-def get_eeg_plotting_config(meta_experiments=[]) -> ExperimentConfig:
+def get_eeg_plotting_config(meta_experiments=None) -> ExperimentConfig:
+    if meta_experiments is None:
+        meta_experiments = []
+
     models = get_eeg_config_single_subject(subject_id=0, meta_experiments=meta_experiments).models
 
     return ExperimentConfig(
@@ -150,7 +199,10 @@ def get_eeg_plotting_config(meta_experiments=[]) -> ExperimentConfig:
     )
 
 
-def get_eeg_configs(meta_experiments=[]) -> List[ExperimentConfig]:
+def get_eeg_configs(meta_experiments=None) -> List[ExperimentConfig]:
+    if meta_experiments is None:
+        meta_experiments = []
+
     return [get_eeg_config_single_subject(subject_id, meta_experiments=meta_experiments) for subject_id in
             range(9)]
 
@@ -179,11 +231,18 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         #                                           "label_noise",
         #                                           "ood_class"
         #                                           ])
-        *[get_fashion_mnist_configs(meta_experiments=[# "decreasing_dataset",
-                                                      # "label_noise",
-                                                      "ood_class"
-                                                      ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::-1],
+        # *[get_fashion_mnist_configs(meta_experiments=["decreasing_dataset",
+        #                                               "label_noise",
+        #                                               "ood_class"
+        #                                               ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::-1],
         # get_fashion_mnist_plotting_config(["decreasing_dataset",
         #                                    "label_noise",
         #                                    "ood_class"])
+        *[get_wine_config(meta_experiments=["decreasing_dataset",
+                                            "label_noise",
+                                            "ood_class"
+                                            ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::1],
+        get_wine_plotting_config(["decreasing_dataset",
+                                  "label_noise",
+                                  "ood_class"])
     ]

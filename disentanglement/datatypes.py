@@ -26,6 +26,7 @@ class UncertaintyResults:
         self.epistemic_uncertainties.append(epistemic_uncertainty)
         self.changed_parameter_values.append(parameter)
 
+
 @dataclass
 class Dataset:
     X_train: np.ndarray

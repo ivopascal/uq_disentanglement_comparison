@@ -38,6 +38,7 @@ Additionally, the `notebooks` folder has some jupyter notebooks which contain sm
 # Attribution and context
 
 This repository was built to run the experiments for a paper that is currently under review.
-The paper gives further introduction to the problem and an interpretation of the results. The paper is available upon request.
+The paper gives further introduction to the problem and an interpretation of the results. The paper is available upon request. Previous results as figures or data files are also available upon request.
 
 For attribution, citing the to-be-reviewed paper is appreciated.
+

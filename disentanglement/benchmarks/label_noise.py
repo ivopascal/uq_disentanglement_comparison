@@ -87,6 +87,20 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
                                                           accuracy_y_ax_to_share, is_final_column, std=it_std,
                                                           normalise_uncertainties=False)
 
+        if gaussian_logits_std:
+            gl_ale_corr = np.corrcoef(-np.array(gaussian_logits_results.aleatoric_uncertainties),
+                                      gaussian_logits_results.accuracies)[0, 1]
+            gl_epi_corr = np.corrcoef(-np.array(gaussian_logits_results.epistemic_uncertainties),
+                                      gaussian_logits_results.accuracies)[0, 1]
+            it_ale_corr = np.corrcoef(-np.array(it_results.aleatoric_uncertainties),
+                                      gaussian_logits_results.accuracies)[0, 1]
+            it_epi_corr = np.corrcoef(-np.array(it_results.epistemic_uncertainties),
+                                      gaussian_logits_results.accuracies)[0, 1]
+
+            print(f"Label Noise - {architecture.uq_name}")
+            print(f"GL Ale corr \t GL Epi corr \t IT Ale corr \t IT Epi corr")
+            print(f"{gl_ale_corr:.3} \t & \t {gl_epi_corr:.3}  & \t {it_ale_corr:.3} & \t {it_epi_corr:.3}")
+
         axes[0][arch_idx].set_title(architecture.uq_name)
         axes[1][arch_idx].set_xlabel("Labels shuffled")
         if is_first_column:

@@ -13,7 +13,7 @@ from disentanglement.logging import TQDM
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_DECREASING_DATASET_STEPS
-from disentanglement.util import normalise, load_results_from_file, save_results_to_file
+from disentanglement.util import normalise, load_results_from_file, save_results_to_file, print_correlations
 
 META_EXPERIMENT_NAME = "decreasing_dataset"
 
@@ -183,6 +183,9 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         axes[0][arch_idx].set_title(architecture.uq_name, fontsize=font_size)
         axes[1][arch_idx].set_xlabel("Dataset size", fontsize=font_size)
 
+        if gaussian_logits_results_std:
+            print(f"Changing dataset size - {architecture.uq_name}")
+            print_correlations(gaussian_logits_results, it_results)
 
         if is_first_column:
             axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty", fontsize=font_size)

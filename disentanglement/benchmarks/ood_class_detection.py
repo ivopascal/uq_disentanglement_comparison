@@ -155,7 +155,7 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
         if arch_idx == len(experiment_config.models) - 1:
             axes[0][arch_idx].legend(loc="lower right")
 
-        print(f"{architecture.uq_name}")
+        print(f"OOD AUROC {architecture.uq_name}")
         print(f"GL Ale \t\t GL Epi \t IT Ale \t IT Epi")
 
         print(f"{gl_ale_auc:.3} \pm {gl_ale_auc_std:.4} & \t {gl_epi_auc:.3} \pm {gl_epi_auc_std:.4} & \t {it_ale_auc:.3} \pm {it_ale_auc_std:.4} & \t {it_epi_auc:.3} \pm {it_epi_auc_std:.4}")

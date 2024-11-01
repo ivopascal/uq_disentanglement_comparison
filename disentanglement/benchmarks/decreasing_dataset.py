@@ -162,17 +162,6 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         is_first_column = arch_idx == 0
         is_final_column = arch_idx == len(experiment_config.models) - 1
 
-        # entry_to_ignore = np.argmin(gaussian_logits_results.changed_parameter_values)
-        # del gaussian_logits_results.accuracies[entry_to_ignore]
-        # del gaussian_logits_results.epistemic_uncertainties[entry_to_ignore]
-        # del gaussian_logits_results.aleatoric_uncertainties[entry_to_ignore]
-        # del gaussian_logits_results.changed_parameter_values[entry_to_ignore]
-        #
-        # del it_results.accuracies[entry_to_ignore]
-        # del it_results.epistemic_uncertainties[entry_to_ignore]
-        # del it_results.aleatoric_uncertainties[entry_to_ignore]
-        # del it_results.changed_parameter_values[entry_to_ignore]
-
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
                                                           accuracy_y_ax_to_share, is_final_column, std=gaussian_logits_results_std,
                                                           normalise_uncertainties=False)

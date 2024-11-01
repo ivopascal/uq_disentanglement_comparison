@@ -1,6 +1,9 @@
+import os
+
 import keras
+import numpy as np
 import pandas as pd
-from sklearn.datasets import load_wine
+from sklearn.datasets import load_wine, fetch_california_housing
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
@@ -55,4 +58,30 @@ def get_train_test_wine() -> Dataset:
     X_test = sc.transform(X_test)
 
     return Dataset(X_train, y_train, X_test, y_test)
+
+
+def get_train_test_auto_mpg_regression() -> Dataset:
+    url = 'http://archive.ics.uci.edu/ml/machine-learning-databases/auto-mpg/auto-mpg.data'
+    column_names = ['MPG', 'Cylinders', 'Displacement', 'Horsepower', 'Weight',
+                    'Acceleration', 'Model Year', 'Origin']
+
+    raw_dataset = pd.read_csv(url, names=column_names,
+                              na_values='?', comment='\t',
+                              sep=' ', skipinitialspace=True)
+    dataset = raw_dataset.copy()
+    dataset = dataset.dropna()
+
+    dataset['Origin'] = dataset['Origin'].map({1: 'USA', 2: 'Europe', 3: 'Japan'})
+    dataset = pd.get_dummies(dataset, columns=['Origin'], prefix='', prefix_sep='')
+    train_dataset = dataset.sample(frac=0.8, random_state=0)
+    test_dataset = dataset.drop(train_dataset.index)
+
+    train_features = train_dataset.copy()
+    test_features = test_dataset.copy()
+
+    train_labels = train_features.pop('MPG')
+    test_labels = test_features.pop('MPG')
+
+    normalizer = keras.layers.Normalization(axis=-1)
+    normalizer.adapt(np.array(train_features))
 

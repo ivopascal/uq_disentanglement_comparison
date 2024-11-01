@@ -13,7 +13,7 @@ from disentanglement.logging import TQDM
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_DECREASING_DATASET_STEPS
-from disentanglement.util import normalise, load_results_from_file, save_results_to_file
+from disentanglement.util import normalise, load_results_from_file, save_results_to_file, print_correlations
 
 META_EXPERIMENT_NAME = "decreasing_dataset"
 
@@ -184,23 +184,8 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         axes[1][arch_idx].set_xlabel("Dataset size", fontsize=font_size)
 
         if gaussian_logits_results_std:
-
-            gl_ale_corr = np.corrcoef(-np.array(gaussian_logits_results.aleatoric_uncertainties),
-                                      gaussian_logits_results.accuracies)[0, 1]
-            gl_epi_corr = np.corrcoef(-np.array(gaussian_logits_results.epistemic_uncertainties),
-                                      gaussian_logits_results.accuracies)[0, 1]
-            it_ale_corr = np.corrcoef(-np.array(it_results.aleatoric_uncertainties),
-                                      gaussian_logits_results.accuracies)[0, 1]
-            it_epi_corr = np.corrcoef(-np.array(it_results.epistemic_uncertainties),
-                                      gaussian_logits_results.accuracies)[0, 1]
-
             print(f"Changing dataset size - {architecture.uq_name}")
-            print(f"GL Ale corr \t GL Epi corr \t IT Ale corr \t IT Epi corr")
-            print(f"{gl_ale_corr:.3} \t & \t {gl_epi_corr:.3}  & \t {it_ale_corr:.3} & \t {it_epi_corr:.3}")
-
-            # print(f"{gl_ale_corr:.3} \pm {gl_ale_corr_std:.4} & \t {gl_epi_corr:.3} \pm {gl_epi_corr_std:.4} & \t {it_ale_corr:.3} \pm {it_ale_corr_std:.4} & \t {it_epi_corr:.3} \pm {it_epi_corr_std:.4}")
-
-
+            print_correlations(gaussian_logits_results, it_results)
 
         if is_first_column:
             axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty", fontsize=font_size)

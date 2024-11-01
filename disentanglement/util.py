@@ -82,3 +82,17 @@ def load_results_from_file(experiment_config, architecture, meta_experiment_name
                         f"it_results{get_test_append()}.csv")
     it_results = UncertaintyResults(**df_it.to_dict(orient='list'))
     return gaussian_logits_results, it_results, None, None
+
+
+def print_correlations(gl_results, it_results):
+    gl_ale_corr = np.corrcoef(-np.array(gl_results.aleatoric_uncertainties),
+                              gl_results.accuracies)[0, 1]
+    gl_epi_corr = np.corrcoef(-np.array(gl_results.epistemic_uncertainties),
+                              gl_results.accuracies)[0, 1]
+    it_ale_corr = np.corrcoef(-np.array(it_results.aleatoric_uncertainties),
+                              gl_results.accuracies)[0, 1]
+    it_epi_corr = np.corrcoef(-np.array(it_results.epistemic_uncertainties),
+                              gl_results.accuracies)[0, 1]
+
+    print(f"GL Ale corr \t GL Epi corr \t IT Ale corr \t IT Epi corr")
+    print(f"{gl_ale_corr:.3} \t & \t {gl_epi_corr:.3}  & \t {it_ale_corr:.3} & \t {it_epi_corr:.3}")

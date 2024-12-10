@@ -48,12 +48,12 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
         X_train_sub = np.concatenate(X_train_subs)
         y_train_sub = np.concatenate(y_train_subs)
         X_train_sub, y_train_sub = shuffle(X_train_sub, y_train_sub)
-        small_dataset = Dataset(X_train_sub, y_train_sub, dataset.X_test, dataset.y_test)
+        small_dataset = Dataset(X_train_sub, y_train_sub, dataset.X_test, dataset.y_test, is_regression=dataset.is_regression)
 
         gl_results.append_values(*get_average_uncertainty_gaussian_logits(small_dataset, model_function, adjusted_epochs),
                                  dataset_size)
 
-        it_results.append_values(*get_average_uncertainty_it(small_dataset, model_function, adjusted_epochs), dataset_size)
+        # it_results.append_values(*get_average_uncertainty_it(small_dataset, model_function, adjusted_epochs), dataset_size)
         gc.collect()
 
     return gl_results, it_results
@@ -61,11 +61,20 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
 
 def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False, std=None,
                              normalise_uncertainties=False):
-    # results.changed_parameter_values = results.changed_parameter_values[1:]
-    # results.epistemic_uncertainties = results.epistemic_uncertainties[1:]
-    # results.aleatoric_uncertainties = results.aleatoric_uncertainties[1:]
-    # results.accuracies = results.accuracies[1:]
+    if results:
+        results.changed_parameter_values = results.changed_parameter_values[:-1]
+        results.epistemic_uncertainties = results.epistemic_uncertainties[:-1]
+        results.aleatoric_uncertainties = results.aleatoric_uncertainties[:-1]
+        results.accuracies = results.accuracies[:-1]
 
+    if std:
+        std.changed_parameter_values = std.changed_parameter_values[:-1]
+        std.epistemic_uncertainties = std.epistemic_uncertainties[:-1]
+        std.aleatoric_uncertainties = std.aleatoric_uncertainties[:-1]
+        std.accuracies = std.accuracies[:-1]
+
+    if not results:
+        return
 
     if normalise_uncertainties:
         scatter_alpha = 0.15
@@ -92,11 +101,6 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
 
         ax.plot(results.changed_parameter_values, results.epistemic_uncertainties, label="Epi")
         ax.plot(results.changed_parameter_values, results.aleatoric_uncertainties, label="Ale")
-
-
-
-
-    # ax.set_xscale('log')
 
     if normalise_uncertainties:
         scatter_alpha = 0.15
@@ -144,7 +148,7 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
             except FileNotFoundError:
                 print(
                     f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
-        if not gaussian_logits_results or not it_results:
+        if not gaussian_logits_results:
             gaussian_logits_results, it_results = run_decreasing_dataset(
                 experiment_config.dataset, architecture.model_function, architecture.epochs)
             save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,

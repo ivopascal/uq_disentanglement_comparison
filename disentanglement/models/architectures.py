@@ -1,12 +1,13 @@
 import numpy as np
-from keras import Sequential, Input
+from keras import Sequential, Input, Model
 from keras.src.constraints import max_norm
 from keras.src.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout, Activation, BatchNormalization, \
     AveragePooling2D
+from keras_uncertainty.losses import regression_gaussian_nll_loss
 from tensorflow.keras import backend as K
 
 from keras_uncertainty.layers import StochasticDropout, DropConnectDense, FlipoutDense
-from keras_uncertainty.models import DeepEnsembleClassifier
+from keras_uncertainty.models import DeepEnsembleClassifier, DeepEnsembleRegressor
 
 from disentanglement.data.blobs import N_BLOBS_TRAINING_SAMPLES
 from disentanglement.settings import NUM_DEEP_ENSEMBLE_ESTIMATORS
@@ -121,6 +122,31 @@ def get_cifar10_convolutional_blocks(input_shape=(32, 32, 3)):
     return model
 
 
+def get_auto_mpg_backbone(input_shape=9):
+    model = Sequential()
+    model.add(Input(input_shape))
+    model.add(Dense(16, activation='relu'))
+
+    return model
+
+
+def get_auto_mpg_dropout_architecture(**_):
+    return get_dropout_from_backbone(backbone_func=get_auto_mpg_backbone, hidden_size=16)
+
+
+def get_auto_mpg_ensemble_architecture(**_):
+    return get_regression_ensemble_from_backbone(backbone_func=get_auto_mpg_backbone, hidden_size=16)
+
+
+def get_auto_mpg_flipout_architecture(n_training_samples):
+    return get_flipout_from_backbone(backbone_func=get_auto_mpg_backbone, hidden_size=16,
+                                     n_training_samples=n_training_samples)
+
+
+def get_auto_mpg_dropconnect_architecture(**_):
+    return get_dropconnect_from_backbone(backbone_func=get_auto_mpg_backbone, hidden_size=16)
+
+
 def get_fashion_mnist_convolutional_blocks():
     return get_cifar10_convolutional_blocks(input_shape=(28, 28, 1))
 
@@ -132,7 +158,6 @@ def get_wine_backbone(input_shape=13):
     model.add(Dense(32))
 
     return model
-
 
 
 def get_dropout_from_backbone(backbone_func, prob=0.3, hidden_size=64, **_):
@@ -154,6 +179,24 @@ def get_ensemble_from_backbone(backbone_func, prob=0.3, hidden_size=64, **_):
         return model
 
     ensemble_model = CustomDeepEnsembleClassifier(model_fn, num_estimators=NUM_DEEP_ENSEMBLE_ESTIMATORS)
+    return ensemble_model
+
+
+def get_regression_ensemble_from_backbone(backbone_func, prob=0.3, hidden_size=64, **_):
+    def model_fn():
+        backbone = backbone_func()
+        hidden_representation = backbone(backbone.inputs)
+        mean = Dense(1, activation="linear")(hidden_representation)
+        var = Dense(1, activation="softplus")(hidden_representation)
+
+        train_model = Model(backbone.inputs, mean)
+        pred_model = Model(backbone.inputs, [mean, var])
+
+        train_model.compile(loss=regression_gaussian_nll_loss(var), optimizer="adam")
+
+        return train_model, pred_model
+
+    ensemble_model = DeepEnsembleRegressor(model_fn, num_estimators=NUM_DEEP_ENSEMBLE_ESTIMATORS)
     return ensemble_model
 
 

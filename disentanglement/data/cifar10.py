@@ -82,6 +82,12 @@ def get_train_test_auto_mpg_regression() -> Dataset:
     train_labels = train_features.pop('MPG')
     test_labels = test_features.pop('MPG')
 
-    normalizer = keras.layers.Normalization(axis=-1)
-    normalizer.adapt(np.array(train_features))
+    normalizer = StandardScaler()
+    normalizer.fit(train_features)
+    train_features = normalizer.transform(train_features)
+    test_features = normalizer.transform(test_features)
+
+    return Dataset(np.array(train_features).astype('float32'), np.array(train_labels).astype('float32'),
+                   np.array(test_features).astype('float32'), np.array(test_labels).astype('float32'),
+                   is_regression=True)
 

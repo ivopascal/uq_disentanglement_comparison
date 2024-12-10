@@ -33,6 +33,7 @@ class Dataset:
     y_train: np.ndarray
     X_test: np.ndarray
     y_test: np.ndarray
+    is_regression: bool # = field(default=False)
 
 
 @dataclass

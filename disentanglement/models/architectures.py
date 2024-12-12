@@ -121,6 +121,19 @@ def get_cifar10_convolutional_blocks(input_shape=(32, 32, 3)):
 
     return model
 
+def get_utkface_convolutional_blocks(input_shape=(128, 128, 3)):
+    model = Sequential()
+    model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(64, kernel_size=(3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(128, kernel_size=(3, 3), activation='relu'))
+    model.add(Conv2D(256, kernel_size=(3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Flatten())
+
+    return model
+
 
 def get_auto_mpg_backbone(input_shape=9):
     model = Sequential()
@@ -128,6 +141,10 @@ def get_auto_mpg_backbone(input_shape=9):
     model.add(Dense(16, activation='relu'))
 
     return model
+
+
+def get_utkface_dropout_architecture(**_):
+    return get_dropout_from_backbone(backbone_func=get_utkface_convolutional_blocks, hidden_size=256)
 
 
 def get_auto_mpg_dropout_architecture(**_):

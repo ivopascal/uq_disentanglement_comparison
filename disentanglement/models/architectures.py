@@ -147,6 +147,10 @@ def get_utkface_dropout_architecture(**_):
     return get_dropout_from_backbone(backbone_func=get_utkface_convolutional_blocks, hidden_size=256)
 
 
+def get_utkface_dropconnect_architecture(**_):
+    return get_dropconnect_from_backbone(backbone_func=get_utkface_convolutional_blocks, hidden_size=256)
+
+
 def get_auto_mpg_dropout_architecture(**_):
     return get_dropout_from_backbone(backbone_func=get_auto_mpg_backbone, hidden_size=16)
 

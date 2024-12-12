@@ -16,7 +16,7 @@ from disentanglement.models.architectures import get_blobs_dropout_architecture,
     get_fashion_mnist_ensemble_architecture, get_wine_dropout_architecture, get_wine_dropconnect_architecture, \
     get_wine_flipout_architecture, get_wine_ensemble_architecture, get_auto_mpg_dropout_architecture, \
     get_auto_mpg_dropconnect_architecture, get_auto_mpg_flipout_architecture, get_auto_mpg_ensemble_architecture, \
-    get_utkface_dropout_architecture
+    get_utkface_dropout_architecture, get_utkface_dropconnect_architecture
 from disentanglement.settings import TEST_MODE, N_CIFAR_REPETITIONS
 
 
@@ -138,6 +138,7 @@ def get_auto_mpg_plotting_config(meta_experiments=None) -> ExperimentConfig:
         meta_experiments=meta_experiments
     )
 
+
 def get_utkface_config(meta_experiments=None, run_index=1) -> ExperimentConfig:
     if meta_experiments is None:
         meta_experiments = []
@@ -145,7 +146,7 @@ def get_utkface_config(meta_experiments=None, run_index=1) -> ExperimentConfig:
         dataset_name=f"UTKFace {run_index}",
         dataset=get_train_test_utkface_regression(),
         models=[UqModel(get_utkface_dropout_architecture, "MC-Dropout", epochs=15),
-                # UqModel(get_auto_mpg_dropconnect_architecture, "MC-Dropconnect", epochs=100),
+                UqModel(get_utkface_dropconnect_architecture, "MC-Dropconnect", epochs=15),
                 # UqModel(get_auto_mpg_flipout_architecture, "Flipout", epochs=500),
                 # UqModel(get_auto_mpg_ensemble_architecture, "Deep Ensemble", epochs=100),
                 ],

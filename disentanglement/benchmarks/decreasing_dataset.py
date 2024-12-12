@@ -36,8 +36,8 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
         X_train_subs = []
         y_train_subs = []
 
-        adjusted_epochs = int(epochs / dataset_size)
-
+        # adjusted_epochs = int(epochs / dataset_size)
+        adjusted_epochs = epochs
         for y_value in np.unique(y_train):
             n_samples_per_class = int(np.sum((y_train == y_value)) * dataset_size)
             if n_samples_per_class == 0:

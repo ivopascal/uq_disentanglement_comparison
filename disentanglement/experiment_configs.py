@@ -117,10 +117,10 @@ def get_auto_mpg_config(meta_experiments=None, run_index=1) -> ExperimentConfig:
     return ExperimentConfig(
         dataset_name=f"AutoMPG {run_index}",
         dataset=get_train_test_auto_mpg_regression(),
-        models=[UqModel(get_auto_mpg_dropout_architecture, "MC-Dropout", epochs=100),
-                UqModel(get_auto_mpg_dropconnect_architecture, "MC-Dropconnect", epochs=100),
-                UqModel(get_auto_mpg_flipout_architecture, "Flipout", epochs=500),
-                UqModel(get_auto_mpg_ensemble_architecture, "Deep Ensemble", epochs=100),
+        models=[UqModel(get_auto_mpg_dropout_architecture, "MC-Dropout", epochs=1000),
+                UqModel(get_auto_mpg_dropconnect_architecture, "MC-Dropconnect", epochs=1000),
+                UqModel(get_auto_mpg_flipout_architecture, "Flipout", epochs=5000),
+                UqModel(get_auto_mpg_ensemble_architecture, "Deep Ensemble", epochs=1000),
                 ],
         meta_experiments=meta_experiments,
     )
@@ -306,14 +306,14 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         #                           "label_noise",
         #                           "ood_class"])
 
-        # *[get_auto_mpg_config(meta_experiments=["decreasing_dataset",
-        #                                         # "label_noise",
-        #                                         # "ood_class"
-        #                                         ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::-1],
-        # get_auto_mpg_plotting_config(["decreasing_dataset",
-        #                               # "label_noise",
-        #                               #  "ood_class"
-        #                               ]),
+        *[get_auto_mpg_config(meta_experiments=["decreasing_dataset",
+                                                # "label_noise",
+                                                # "ood_class"
+                                                ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::-1],
+        get_auto_mpg_plotting_config(["decreasing_dataset",
+                                      # "label_noise",
+                                      #  "ood_class"
+                                      ]),
         *[get_utkface_config(meta_experiments=["decreasing_dataset",
                                                 # "label_noise",
                                                 # "ood_class"

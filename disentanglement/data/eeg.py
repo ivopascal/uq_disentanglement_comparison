@@ -18,4 +18,4 @@ def get_eeg_data(subject_id):
     le = LabelEncoder()
     y = le.fit_transform(y)
     return Dataset(X[metadata.session == "0train"], y[metadata.session == "0train"],
-                   X[metadata.session == "1test"], y[metadata.session == "1test"])
+                   X[metadata.session == "1test"], y[metadata.session == "1test"], is_regression=False)

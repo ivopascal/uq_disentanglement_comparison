@@ -1,9 +1,8 @@
-import os
 
 import keras
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_wine, fetch_california_housing
+from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
@@ -25,7 +24,7 @@ def get_train_test_cifar_10() -> Dataset:
     x_test = x_test[:n_test_samples]
     y_test = y_test[:n_test_samples]
 
-    return Dataset(x_train, y_train, x_test, y_test)
+    return Dataset(x_train, y_train, x_test, y_test, is_regression=False)
 
 
 def get_train_test_fashion_mnist() -> Dataset:
@@ -40,7 +39,7 @@ def get_train_test_fashion_mnist() -> Dataset:
     x_test = x_test[:n_test_samples]
     y_test = y_test[:n_test_samples]
 
-    return Dataset(x_train, y_train, x_test, y_test)
+    return Dataset(x_train, y_train, x_test, y_test, is_regression=False)
 
 
 def get_train_test_wine() -> Dataset:
@@ -57,7 +56,7 @@ def get_train_test_wine() -> Dataset:
     X_train = sc.fit_transform(X_train)
     X_test = sc.transform(X_test)
 
-    return Dataset(X_train, y_train, X_test, y_test)
+    return Dataset(X_train, y_train, X_test, y_test, is_regression=False)
 
 
 def get_train_test_auto_mpg_regression() -> Dataset:

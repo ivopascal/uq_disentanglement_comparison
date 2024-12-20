@@ -117,17 +117,21 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
 
     for arch_idx, architecture in enumerate(experiment_config.models):
-        TQDM.set_description(f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
+        TQDM.set_description(
+            f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
 
         gaussian_logits_results, it_results = None, None
         if from_folder:
             try:
-                gaussian_logits_results, it_results, gaussian_logits_std, it_std = load_results_from_file(experiment_config, architecture,
-                                                                             meta_experiment_name=META_EXPERIMENT_NAME)
-                print(f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                gaussian_logits_results, it_results, gaussian_logits_std, it_std = load_results_from_file(
+                    experiment_config, architecture,
+                    meta_experiment_name=META_EXPERIMENT_NAME)
+                print(
+                    f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
 
             except FileNotFoundError:
-                print(f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                print(
+                    f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
         if not gaussian_logits_results or not it_results:
             gaussian_logits_results, it_results = run_ood_class_detection(experiment_config.dataset,
                                                                           architecture.model_function,
@@ -137,13 +141,16 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
             save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
                                  meta_experiment_name=META_EXPERIMENT_NAME)
 
-        gl_ale_auc, gl_epi_auc, gl_ale_auc_std, gl_epi_auc_std = plot_roc_on_ax(axes[0][arch_idx], gaussian_logits_results.aleatoric_uncertainties,
-                       gaussian_logits_results.epistemic_uncertainties,
-                       gaussian_logits_results.changed_parameter_values,
-                       std=gaussian_logits_std)
-        it_ale_auc, it_epi_auc, it_ale_auc_std, it_epi_auc_std = plot_roc_on_ax(axes[1][arch_idx], it_results.aleatoric_uncertainties, it_results.epistemic_uncertainties,
-                       it_results.changed_parameter_values,
-                       std=it_std)
+        gl_ale_auc, gl_epi_auc, gl_ale_auc_std, gl_epi_auc_std = plot_roc_on_ax(axes[0][arch_idx],
+                                                                                gaussian_logits_results.aleatoric_uncertainties,
+                                                                                gaussian_logits_results.epistemic_uncertainties,
+                                                                                gaussian_logits_results.changed_parameter_values,
+                                                                                std=gaussian_logits_std)
+        it_ale_auc, it_epi_auc, it_ale_auc_std, it_epi_auc_std = plot_roc_on_ax(axes[1][arch_idx],
+                                                                                it_results.aleatoric_uncertainties,
+                                                                                it_results.epistemic_uncertainties,
+                                                                                it_results.changed_parameter_values,
+                                                                                std=it_std)
 
         axes[0][arch_idx].set_title(architecture.uq_name)
         axes[1][arch_idx].set_xlabel("False Positive Rate")
@@ -158,9 +165,9 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
         print(f"OOD AUROC {architecture.uq_name}")
         print(f"GL Ale \t\t GL Epi \t IT Ale \t IT Epi")
 
-        print(f"{gl_ale_auc:.3} \pm {gl_ale_auc_std:.4} & \t {gl_epi_auc:.3} \pm {gl_epi_auc_std:.4} & \t {it_ale_auc:.3} \pm {it_ale_auc_std:.4} & \t {it_epi_auc:.3} \pm {it_epi_auc_std:.4}")
+        print(
+            f"{gl_ale_auc:.3} \pm {gl_ale_auc_std:.4} & \t {gl_epi_auc:.3} \pm {gl_epi_auc_std:.4} & \t {it_ale_auc:.3} \pm {it_ale_auc_std:.4} & \t {it_epi_auc:.3} \pm {it_epi_auc_std:.4}")
 
-    # fig.suptitle(f"ROC curves for OOD detection for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()
 
     if TEST_MODE:

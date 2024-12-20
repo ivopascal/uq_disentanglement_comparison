@@ -16,7 +16,6 @@ N_CIFAR10_TRAINING_SAMPLES = 50_000
 def get_train_test_cifar_10() -> Dataset:
     (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
-
     if TEST_MODE:
         n_test_samples = 100
     else:
@@ -31,6 +30,8 @@ def get_train_test_cifar_10() -> Dataset:
 def get_train_test_fashion_mnist() -> Dataset:
     (x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
+    x_train = np.expand_dims(x_train, -1)
+    x_test = np.expand_dims(x_test, -1)
 
     if TEST_MODE:
         n_test_samples = 100

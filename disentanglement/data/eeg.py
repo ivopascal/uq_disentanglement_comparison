@@ -1,3 +1,4 @@
+import numpy as np
 from moabb.datasets import BNCI2014_001
 from moabb.paradigms import MotorImagery
 from sklearn.preprocessing import LabelEncoder
@@ -14,6 +15,7 @@ def get_eeg_data(subject_id):
     )
 
     X, y, metadata = paradigm.get_data(dataset=dataset, subjects=[subject_id + 1])
+    X = np.expand_dims(X, -1)
 
     le = LabelEncoder()
     y = le.fit_transform(y)

@@ -6,6 +6,7 @@ from keras.layers import Dense
 
 import numpy as np
 from sklearn.metrics import accuracy_score
+from tensorflow.python.ops.losses.losses_impl import mean_squared_error
 
 from disentanglement.datatypes import Dataset
 from disentanglement.logging import TQDM
@@ -52,6 +53,9 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
 
 
 def get_average_uncertainty_it(dataset: Dataset, architecture_func, epochs):
+    if dataset.is_regression:
+        return np.NaN, np.NaN, np.NaN
+
     n_classes = len(np.unique(dataset.y_train))
     it_model = train_it_model(architecture_func, dataset.X_train, dataset.y_train, n_classes, epochs=epochs)
 

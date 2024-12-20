@@ -15,6 +15,9 @@ from sklearn.metrics import accuracy_score, mean_squared_error
 from disentanglement.datatypes import Dataset
 from disentanglement.logging import TQDM
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE, MODEL_TRAIN_VERBOSE
+import tensorflow as tf
+
+from disentanglement.util import custom_regression_gaussian_nll_loss
 
 
 def uncertainty(probs):
@@ -37,7 +40,6 @@ def two_head_model(trunk_model, num_classes=2, num_samples=100):
 
     return train_model, pred_model
 
-
 def two_head_regression_model(trunk_model, num_samples=100):
     input_shape = trunk_model.layers[0].input.shape[1:]
 
@@ -45,11 +47,16 @@ def two_head_regression_model(trunk_model, num_samples=100):
     x = trunk_model(inp)
     mean = Dense(1, activation="linear")(x)
     var = Dense(1, activation="softplus")(x)
+    label_layer = Input((1,))
 
-    train_model = Model(inp, mean, name="train_model")
+    train_model = Model([inp, label_layer], [mean, var], name="train_model")
     pred_model = Model(inp, [mean, var], name="pred_model")
 
-    train_model.compile(loss=regression_gaussian_nll_loss(var), optimizer="adam", metrics=["mse"])
+
+    loss = custom_regression_gaussian_nll_loss(label_layer, mean, var)
+    train_model.add_loss(loss)
+
+    train_model.compile( optimizer="adam", metrics=["mse"])
     return train_model, pred_model
 
 
@@ -71,7 +78,7 @@ def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes
         return DisentangledStochasticClassifier(trunk_model, epi_num_samples=trunk_model.num_estimators)
     if isinstance(trunk_model, DeepEnsembleRegressor):
         csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
-        trunk_model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE,
+        trunk_model.fit([x_train, y_train], np.empty_like(y_train), epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE,
                         callbacks=[csv_logger])
         TQDM.update(len(trunk_model.train_estimators))
         gc.collect()
@@ -87,12 +94,15 @@ def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes
     batch_size = BATCH_SIZE
     if batch_size > len(y_train):
         batch_size = len(y_train)
-    train_model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=MODEL_TRAIN_VERBOSE,
-                    callbacks=[csv_logger])
+
 
     if regression:
+        train_model.fit([x_train, y_train], np.empty_like(y_train), epochs=epochs, batch_size=batch_size, verbose=MODEL_TRAIN_VERBOSE,
+                        callbacks=[csv_logger])
         final_model = TwoHeadStochasticRegressor(pred_model, variance_type="linear_std")
     else:
+        train_model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=MODEL_TRAIN_VERBOSE,
+                        callbacks=[csv_logger])
         final_model = DisentangledStochasticClassifier(pred_model, epi_num_samples=NUM_SAMPLES)
     TQDM.update(1)
 

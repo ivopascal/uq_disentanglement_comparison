@@ -3,14 +3,13 @@ from keras import Sequential, Input, Model
 from keras.src.constraints import max_norm
 from keras.src.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout, Activation, BatchNormalization, \
     AveragePooling2D
-from keras_uncertainty.losses import regression_gaussian_nll_loss
-from tensorflow.keras import backend as K
-
 from keras_uncertainty.layers import StochasticDropout, DropConnectDense, FlipoutDense
 from keras_uncertainty.models import DeepEnsembleClassifier, DeepEnsembleRegressor
+from tensorflow.keras import backend as K
 
 from disentanglement.data.blobs import N_BLOBS_TRAINING_SAMPLES
 from disentanglement.settings import NUM_DEEP_ENSEMBLE_ESTIMATORS
+from disentanglement.util import custom_regression_gaussian_nll_loss
 
 
 class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
@@ -150,6 +149,13 @@ def get_utkface_dropout_architecture(**_):
 def get_utkface_dropconnect_architecture(**_):
     return get_dropconnect_from_backbone(backbone_func=get_utkface_convolutional_blocks, hidden_size=256)
 
+def get_utkface_flipout_architecture(n_training_samples):
+    return get_flipout_from_backbone(backbone_func=get_utkface_convolutional_blocks, hidden_size=256, n_training_samples=n_training_samples)
+
+
+def get_utkface_ensemble_architecture(**_):
+    return get_regression_ensemble_from_backbone(backbone_func=get_utkface_convolutional_blocks, hidden_size=256)
+
 
 def get_auto_mpg_dropout_architecture(**_):
     return get_dropout_from_backbone(backbone_func=get_auto_mpg_backbone, hidden_size=16)
@@ -210,10 +216,16 @@ def get_regression_ensemble_from_backbone(backbone_func, prob=0.3, hidden_size=6
         mean = Dense(1, activation="linear")(hidden_representation)
         var = Dense(1, activation="softplus")(hidden_representation)
 
-        train_model = Model(backbone.inputs, mean)
-        pred_model = Model(backbone.inputs, [mean, var])
 
-        train_model.compile(loss=regression_gaussian_nll_loss(var), optimizer="adam")
+        label_layer = Input((1,))
+
+        train_model = Model([backbone.inputs, label_layer], [mean, var], name="train_model")
+        pred_model = Model(backbone.inputs, [mean, var], name="pred_model")
+
+        loss = custom_regression_gaussian_nll_loss(label_layer, mean, var)
+        train_model.add_loss(loss)
+
+        train_model.compile(optimizer="adam")
 
         return train_model, pred_model
 

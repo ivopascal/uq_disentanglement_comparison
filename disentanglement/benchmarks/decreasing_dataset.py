@@ -12,7 +12,7 @@ from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.logging import TQDM
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
-from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_DECREASING_DATASET_STEPS
+from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
 from disentanglement.util import normalise, load_results_from_file, save_results_to_file, print_correlations
 
 META_EXPERIMENT_NAME = "decreasing_dataset"
@@ -48,18 +48,21 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
         X_train_sub = np.concatenate(X_train_subs)
         y_train_sub = np.concatenate(y_train_subs)
         X_train_sub, y_train_sub = shuffle(X_train_sub, y_train_sub)
-        small_dataset = Dataset(X_train_sub, y_train_sub, dataset.X_test, dataset.y_test, is_regression=dataset.is_regression)
+        small_dataset = Dataset(X_train_sub, y_train_sub, dataset.X_test, dataset.y_test,
+                                is_regression=dataset.is_regression)
 
-        gl_results.append_values(*get_average_uncertainty_gaussian_logits(small_dataset, model_function, adjusted_epochs),
-                                 dataset_size)
+        gl_results.append_values(
+            *get_average_uncertainty_gaussian_logits(small_dataset, model_function, adjusted_epochs),
+            dataset_size)
 
-        # it_results.append_values(*get_average_uncertainty_it(small_dataset, model_function, adjusted_epochs), dataset_size)
+        it_results.append_values(*get_average_uncertainty_it(small_dataset, model_function, adjusted_epochs), dataset_size)
         gc.collect()
 
     return gl_results, it_results
 
 
-def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False, std=None,
+def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_share=None, is_final_column=False,
+                             std=None,
                              normalise_uncertainties=False):
     if results:
         results.changed_parameter_values = results.changed_parameter_values[:-1]
@@ -82,8 +85,10 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
         scatter_alpha = 1.0
 
     if normalise_uncertainties:
-        ax.plot(results.changed_parameter_values, normalise(results.epistemic_uncertainties), label="Epistemic", alpha=scatter_alpha)
-        ax.plot(results.changed_parameter_values, normalise(results.aleatoric_uncertainties), label="Aleatoric", alpha=scatter_alpha)
+        ax.plot(results.changed_parameter_values, normalise(results.epistemic_uncertainties), label="Epistemic",
+                alpha=scatter_alpha)
+        ax.plot(results.changed_parameter_values, normalise(results.aleatoric_uncertainties), label="Aleatoric",
+                alpha=scatter_alpha)
 
         z = np.polyfit(np.log(results.changed_parameter_values), normalise(results.epistemic_uncertainties), 1)
         ax.plot(results.changed_parameter_values, np.poly1d(z)(np.log(results.changed_parameter_values)))
@@ -93,11 +98,14 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
 
     else:
         if std:
-            ax.fill_between(results.changed_parameter_values, np.array(results.epistemic_uncertainties) - 1.96 * np.array(std.epistemic_uncertainties),
-                            np.array(results.epistemic_uncertainties) + 1.96 * np.array(std.epistemic_uncertainties), alpha=0.3, label='_Epi')
+            ax.fill_between(results.changed_parameter_values,
+                            np.array(results.epistemic_uncertainties) - 1.96 * np.array(std.epistemic_uncertainties),
+                            np.array(results.epistemic_uncertainties) + 1.96 * np.array(std.epistemic_uncertainties),
+                            alpha=0.3, label='_Epi')
             ax.fill_between(results.changed_parameter_values,
                             np.array(results.aleatoric_uncertainties) - 1.96 * np.array(std.aleatoric_uncertainties),
-                            np.array(results.aleatoric_uncertainties) + 1.96 * np.array(std.aleatoric_uncertainties), alpha=0.3, label='_Ale')
+                            np.array(results.aleatoric_uncertainties) + 1.96 * np.array(std.aleatoric_uncertainties),
+                            alpha=0.3, label='_Ale')
 
         ax.plot(results.changed_parameter_values, results.epistemic_uncertainties, label="Epi")
         ax.plot(results.changed_parameter_values, results.aleatoric_uncertainties, label="Ale")
@@ -108,16 +116,18 @@ def plot_ale_epi_acc_on_axes(ax, results: UncertaintyResults, accuracy_y_ax_to_s
         scatter_alpha = 1.0
     accuracy_axes = ax.twinx()
     accuracy_axes.plot(results.changed_parameter_values, results.accuracies,
-                          label="Accuracy", color='green', alpha=scatter_alpha)
+                       label="Accuracy", color='green', alpha=scatter_alpha)
 
     if std:
         accuracy_axes.fill_between(results.changed_parameter_values,
-                        np.array(results.accuracies) - 1.96 * np.array(std.accuracies),
-                        np.array(results.accuracies) + 1.96 * np.array(std.accuracies), alpha=0.3, color='green')
+                                   np.array(results.accuracies) - 1.96 * np.array(std.accuracies),
+                                   np.array(results.accuracies) + 1.96 * np.array(std.accuracies), alpha=0.3,
+                                   color='green')
 
     if normalise_uncertainties:
         z = np.polyfit(np.log(results.changed_parameter_values), results.accuracies, 1)
-        accuracy_axes.plot(results.changed_parameter_values, np.poly1d(z)(np.log(results.changed_parameter_values)), color='green')
+        accuracy_axes.plot(results.changed_parameter_values, np.poly1d(z)(np.log(results.changed_parameter_values)),
+                           color='green')
 
     if is_final_column:
         accuracy_axes.set_ylabel("Accuracy", color='green')
@@ -141,8 +151,9 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         gaussian_logits_results, it_results = None, None
         if from_folder:
             try:
-                gaussian_logits_results, it_results, gaussian_logits_results_std, it_results_std = load_results_from_file(experiment_config, architecture,
-                                                                             meta_experiment_name=META_EXPERIMENT_NAME)
+                gaussian_logits_results, it_results, gaussian_logits_results_std, it_results_std = load_results_from_file(
+                    experiment_config, architecture,
+                    meta_experiment_name=META_EXPERIMENT_NAME)
                 print(
                     f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
             except FileNotFoundError:
@@ -156,9 +167,9 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
             gaussian_logits_results_std, it_results_std = None, None
 
         if TEST_MODE:  # Check if it's possible to load data from disk
-            gaussian_logits_results, it_results = load_results_from_file(experiment_config, architecture,
-                                                                         meta_experiment_name=META_EXPERIMENT_NAME)
-            gaussian_logits_results_std, it_results_std = None, None
+            gaussian_logits_results, it_results, gaussian_logits_results_std, it_results_std = load_results_from_file(
+                experiment_config, architecture,
+                meta_experiment_name=META_EXPERIMENT_NAME)
 
         if not os.path.exists(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/"):
             os.mkdir(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/")
@@ -167,7 +178,8 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         is_final_column = arch_idx == len(experiment_config.models) - 1
 
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
-                                                          accuracy_y_ax_to_share, is_final_column, std=gaussian_logits_results_std,
+                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          std=gaussian_logits_results_std,
                                                           normalise_uncertainties=False)
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
                                                           accuracy_y_ax_to_share, is_final_column, std=it_results_std,
@@ -191,8 +203,6 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
             handles.append(line)
 
             axes[0][arch_idx].legend(handles=handles, labels=labels, loc='upper left', fontsize=10)
-
-
 
     # fig.suptitle(f"Disentangled uncertainty over decreasing dataset sizes for {experiment_config.dataset_name}",
     #              fontsize=20)

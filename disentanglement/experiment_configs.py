@@ -16,37 +16,38 @@ from disentanglement.models.architectures import get_blobs_dropout_architecture,
     get_fashion_mnist_ensemble_architecture, get_wine_dropout_architecture, get_wine_dropconnect_architecture, \
     get_wine_flipout_architecture, get_wine_ensemble_architecture, get_auto_mpg_dropout_architecture, \
     get_auto_mpg_dropconnect_architecture, get_auto_mpg_flipout_architecture, get_auto_mpg_ensemble_architecture, \
-    get_utkface_dropout_architecture, get_utkface_dropconnect_architecture
+    get_utkface_dropout_architecture, get_utkface_dropconnect_architecture, get_utkface_ensemble_architecture, \
+    get_utkface_flipout_architecture
 from disentanglement.settings import TEST_MODE, N_CIFAR_REPETITIONS
 
 
 def get_test_mode_configs() -> List[ExperimentConfig]:
     return [
-        # ExperimentConfig(
-        #     dataset_name="CIFAR10",
-        #     dataset=get_train_test_cifar_10(),
-        #     models=[UqModel(get_cifar10_dropout_architecture, "MC-Dropout", epochs=100),
-        #             UqModel(get_cifar10_dropconnect_architecture, "MC-DropConnect", epochs=100),
-        #             UqModel(get_cifar10_flipout_architecture, "Flipout", epochs=500),
-        #             UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
-        #             ],
-        #     meta_experiments=["ood_class"
-        #                       ],
-        # ),
-        # ExperimentConfig(
-        #     dataset_name="blobs",
-        #     dataset=get_train_test_blobs(),
-        #     models=[
-        #         UqModel(get_blobs_dropout_architecture, "MC-Dropout", epochs=50),
-        #         UqModel(get_blobs_ensemble_architecture, "Deep Ensemble", epochs=50),
-        #         UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=50),
-        #         UqModel(get_blobs_flipout_architecture, "Flipout", epochs=500)
-        #     ],
-        #     meta_experiments=[
-        #         "decreasing_dataset",
-        #         "label_noise"
-        #     ]
-        # ),
+        ExperimentConfig(
+            dataset_name="CIFAR10",
+            dataset=get_train_test_cifar_10(),
+            models=[UqModel(get_cifar10_dropout_architecture, "MC-Dropout", epochs=100),
+                    UqModel(get_cifar10_dropconnect_architecture, "MC-DropConnect", epochs=100),
+                    UqModel(get_cifar10_flipout_architecture, "Flipout", epochs=500),
+                    UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
+                    ],
+            meta_experiments=["ood_class"
+                              ],
+        ),
+        ExperimentConfig(
+            dataset_name="blobs",
+            dataset=get_train_test_blobs(),
+            models=[
+                UqModel(get_blobs_dropout_architecture, "MC-Dropout", epochs=50),
+                UqModel(get_blobs_ensemble_architecture, "Deep Ensemble", epochs=50),
+                UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=50),
+                UqModel(get_blobs_flipout_architecture, "Flipout", epochs=500)
+            ],
+            meta_experiments=[
+                "decreasing_dataset",
+                "label_noise"
+            ]
+        ),
         ExperimentConfig(
             dataset_name="Motor Imagery BCI Test",
             dataset=get_eeg_data(subject_id=0),
@@ -65,6 +66,16 @@ def get_test_mode_configs() -> List[ExperimentConfig]:
                                                     "label_noise",
                                                     "ood_class"
                                                     ]),
+        get_wine_config(meta_experiments=["decreasing_dataset",
+                                          "label_noise",
+                                          "ood_class",
+                                          ]),
+        get_auto_mpg_config(meta_experiments=["decreasing_dataset",
+                                              "label_noise",
+                                              # "ood_class",
+                                              ]),
+        get_utkface_config(meta_experiments=["decreasing_dataset", "label_noise"])
+
     ]
 
 
@@ -117,10 +128,10 @@ def get_auto_mpg_config(meta_experiments=None, run_index=1) -> ExperimentConfig:
     return ExperimentConfig(
         dataset_name=f"AutoMPG {run_index}",
         dataset=get_train_test_auto_mpg_regression(),
-        models=[UqModel(get_auto_mpg_dropout_architecture, "MC-Dropout", epochs=100),
-                UqModel(get_auto_mpg_dropconnect_architecture, "MC-Dropconnect", epochs=100),
-                UqModel(get_auto_mpg_flipout_architecture, "Flipout", epochs=500),
-                UqModel(get_auto_mpg_ensemble_architecture, "Deep Ensemble", epochs=100),
+        models=[UqModel(get_auto_mpg_dropout_architecture, "MC-Dropout", epochs=1000),
+                UqModel(get_auto_mpg_dropconnect_architecture, "MC-Dropconnect", epochs=1000),
+                UqModel(get_auto_mpg_flipout_architecture, "Flipout", epochs=5000),
+                UqModel(get_auto_mpg_ensemble_architecture, "Deep Ensemble", epochs=1000),
                 ],
         meta_experiments=meta_experiments,
     )
@@ -147,8 +158,8 @@ def get_utkface_config(meta_experiments=None, run_index=1) -> ExperimentConfig:
         dataset=get_train_test_utkface_regression(),
         models=[UqModel(get_utkface_dropout_architecture, "MC-Dropout", epochs=15),
                 UqModel(get_utkface_dropconnect_architecture, "MC-Dropconnect", epochs=15),
-                # UqModel(get_auto_mpg_flipout_architecture, "Flipout", epochs=500),
-                # UqModel(get_auto_mpg_ensemble_architecture, "Deep Ensemble", epochs=100),
+                UqModel(get_utkface_flipout_architecture, "Flipout", epochs=50),
+                UqModel(get_utkface_ensemble_architecture, "Deep Ensemble", epochs=10),
                 ],
         meta_experiments=meta_experiments,
     )
@@ -315,11 +326,11 @@ def get_experiment_configs() -> List[ExperimentConfig]:
                                       #  "ood_class"
                                       ]),
         *[get_utkface_config(meta_experiments=["decreasing_dataset",
-                                                # "label_noise",
-                                                # "ood_class"
-                                                ], run_index=i) for i in range(1)][::-1],
+                                               "label_noise",
+                                               # "ood_class"
+                                               ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::1],
         get_utkface_plotting_config(["decreasing_dataset",
-                                      # "label_noise",
-                                      #  "ood_class"
-                                      ]),
+                                     "label_noise",
+                                     #  "ood_class"
+                                     ]),
     ]

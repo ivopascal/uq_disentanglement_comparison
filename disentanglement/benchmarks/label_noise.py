@@ -38,14 +38,13 @@ def run_label_noise(dataset: Dataset, architecture_func, epochs):
     for noise in noises:
         X_train_noisy, y_train_noisy = partial_shuffle_dataset(dataset.X_train, dataset.y_train, percentage=noise)
         X_test_noisy, y_test_noisy = partial_shuffle_dataset(dataset.X_test, dataset.y_test, percentage=noise)
-        noisy_dataset = Dataset(X_train_noisy, y_train_noisy, X_test_noisy, y_test_noisy)
+        noisy_dataset = Dataset(X_train_noisy, y_train_noisy, X_test_noisy, y_test_noisy, is_regression=dataset.is_regression)
         gl_results.append_values(*get_average_uncertainty_gaussian_logits(noisy_dataset, architecture_func, epochs),
                                  noise)
 
         it_results.append_values(*get_average_uncertainty_it(noisy_dataset, architecture_func, epochs), noise)
 
         gc.collect()
-
 
     return gl_results, it_results
 
@@ -54,20 +53,23 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
     plt.rcParams['font.size'] = 14
 
-
     accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
-        TQDM.set_description(f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
+        TQDM.set_description(
+            f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
 
         gaussian_logits_results, it_results = None, None
         if from_folder:
             try:
-                gaussian_logits_results, it_results, gaussian_logits_std, it_std = load_results_from_file(experiment_config, architecture,
-                                                                             meta_experiment_name=META_EXPERIMENT_NAME)
-                print(f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                gaussian_logits_results, it_results, gaussian_logits_std, it_std = load_results_from_file(
+                    experiment_config, architecture,
+                    meta_experiment_name=META_EXPERIMENT_NAME)
+                print(
+                    f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
 
             except FileNotFoundError:
-                print(f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                print(
+                    f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
         if not gaussian_logits_results or not it_results:
             gaussian_logits_results, it_results = run_label_noise(experiment_config.dataset,
                                                                   architecture.model_function, architecture.epochs)
@@ -81,7 +83,8 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
         is_final_column = arch_idx == len(experiment_config.models) - 1
 
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
-                                                          accuracy_y_ax_to_share, is_final_column, std=gaussian_logits_std,
+                                                          accuracy_y_ax_to_share, is_final_column,
+                                                          std=gaussian_logits_std,
                                                           normalise_uncertainties=False)
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
                                                           accuracy_y_ax_to_share, is_final_column, std=it_std,

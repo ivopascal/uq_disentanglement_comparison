@@ -14,9 +14,6 @@ from disentanglement.benchmarks.label_noise import label_noise
 from disentanglement.benchmarks.ood_class_detection import plot_ood_class_detection
 from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.settings import TEST_MODE, GPU_INDEX
-from tensorflow.python.framework.ops import disable_eager_execution
-disable_eager_execution()
-# tf.compat.v1.disable_eager_execution()
 
 warnings.filterwarnings("ignore")
 

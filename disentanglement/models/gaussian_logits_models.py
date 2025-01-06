@@ -57,29 +57,37 @@ def two_head_regression_model(trunk_model, num_samples=100):
     return train_model, pred_model
 
 
+def train_gl_deep_ensemble_classifier(trunk_model, x_train, y_train, n_classes, epochs):
+    for i, estimator in enumerate(trunk_model.train_estimators):
+        train_model, pred_model = two_head_model(estimator, n_classes)
+        csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
+        train_model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE,
+                        callbacks=[csv_logger])
+        trunk_model.test_estimators[i] = pred_model
+        TQDM.update(1)
+        gc.collect()
+    trunk_model.outputs = [0, 1]  # This tells Stochastic Model that there's two outputs
+    return DisentangledStochasticClassifier(trunk_model, epi_num_samples=trunk_model.num_estimators)
+
+
+def train_gl_deep_ensemble_regression(trunk_model, x_train, y_train, epochs):
+    csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
+    trunk_model.fit([x_train, y_train], np.empty_like(y_train), epochs=epochs, batch_size=BATCH_SIZE,
+                    verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
+    TQDM.update(len(trunk_model.train_estimators))
+    gc.collect()
+    return trunk_model
+
+
 def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes, epochs,
                                 regression=False) -> \
         Union[DisentangledStochasticClassifier, TwoHeadStochasticRegressor, DeepEnsembleRegressor]:
     trunk_model = trunk_model_creator(n_training_samples=x_train.shape[0])
 
     if isinstance(trunk_model, DeepEnsembleClassifier):
-        for i, estimator in enumerate(trunk_model.train_estimators):
-            train_model, pred_model = two_head_model(estimator, n_classes)
-            csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
-            train_model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE,
-                            callbacks=[csv_logger])
-            trunk_model.test_estimators[i] = pred_model
-            TQDM.update(1)
-            gc.collect()
-        trunk_model.outputs = [0, 1]  # This tells Stochastic Model that there's two outputs
-        return DisentangledStochasticClassifier(trunk_model, epi_num_samples=trunk_model.num_estimators)
-    if isinstance(trunk_model, DeepEnsembleRegressor):
-        csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
-        trunk_model.fit([x_train, y_train], np.empty_like(y_train), epochs=epochs, batch_size=BATCH_SIZE,
-                        verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
-        TQDM.update(len(trunk_model.train_estimators))
-        gc.collect()
-        return trunk_model
+        return train_gl_deep_ensemble_classifier(trunk_model, x_train, y_train, n_classes, epochs)
+    elif isinstance(trunk_model, DeepEnsembleRegressor):
+        return train_gl_deep_ensemble_regression(trunk_model, x_train, y_train, epochs)
 
     if regression:
         train_model, pred_model = two_head_regression_model(trunk_model)

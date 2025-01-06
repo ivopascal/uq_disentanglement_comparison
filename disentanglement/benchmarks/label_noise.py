@@ -84,11 +84,9 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
 
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
                                                           accuracy_y_ax_to_share, is_final_column,
-                                                          std=gaussian_logits_std,
-                                                          normalise_uncertainties=False)
+                                                          std=gaussian_logits_std)
         accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
-                                                          accuracy_y_ax_to_share, is_final_column, std=it_std,
-                                                          normalise_uncertainties=False)
+                                                          accuracy_y_ax_to_share, is_final_column, std=it_std)
 
         if gaussian_logits_std:
             print(f"Label Noise - {architecture.uq_name}")

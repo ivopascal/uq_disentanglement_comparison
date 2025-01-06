@@ -2,21 +2,18 @@ import gc
 from typing import Union
 
 import numpy as np
+from keras.layers import Dense, Input
 from keras.models import Model
 from keras.src.callbacks import CSVLogger
 from keras_uncertainty.layers import SamplingSoftmax
-from keras_uncertainty.losses import regression_gaussian_nll_loss
 from keras_uncertainty.models import DisentangledStochasticClassifier, DeepEnsembleClassifier, \
     TwoHeadStochasticRegressor, DeepEnsembleRegressor
-from keras.layers import Dense, Input
 from keras_uncertainty.utils import numpy_entropy
 from sklearn.metrics import accuracy_score, mean_squared_error
 
 from disentanglement.datatypes import Dataset
 from disentanglement.logging import TQDM
-from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE, MODEL_TRAIN_VERBOSE
-import tensorflow as tf
-
+from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, MODEL_TRAIN_VERBOSE
 from disentanglement.util import custom_regression_gaussian_nll_loss
 
 
@@ -40,6 +37,7 @@ def two_head_model(trunk_model, num_classes=2, num_samples=100):
 
     return train_model, pred_model
 
+
 def two_head_regression_model(trunk_model, num_samples=100):
     input_shape = trunk_model.layers[0].input.shape[1:]
 
@@ -51,7 +49,6 @@ def two_head_regression_model(trunk_model, num_samples=100):
 
     train_model = Model([inp, label_layer], [mean, var], name="train_model")
     pred_model = Model(inp, [mean, var], name="pred_model")
-
 
     loss = custom_regression_gaussian_nll_loss(label_layer, mean, var)
     train_model.add_loss(loss)
@@ -94,7 +91,6 @@ def train_gaussian_logits_model(trunk_model_creator, x_train, y_train, n_classes
     batch_size = BATCH_SIZE
     if batch_size > len(y_train):
         batch_size = len(y_train)
-
 
     if regression:
         train_model.fit([x_train, y_train], np.empty_like(y_train), epochs=epochs, batch_size=batch_size, verbose=MODEL_TRAIN_VERBOSE,

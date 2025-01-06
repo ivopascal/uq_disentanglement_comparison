@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Iterable, Union, Optional
+from typing import List, Callable, Iterable, Union, Optional
 
 import numpy as np
 
@@ -33,7 +33,7 @@ class Dataset:
     y_train: np.ndarray
     X_test: np.ndarray
     y_test: np.ndarray
-    is_regression: bool # = field(default=False)
+    is_regression: field(default=False)
 
 
 @dataclass

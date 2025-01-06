@@ -1,3 +1,5 @@
+from typing import Callable
+
 import numpy as np
 from keras import Sequential, Input, Model
 from keras.src.constraints import max_norm
@@ -5,11 +7,58 @@ from keras.src.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout, Acti
     AveragePooling2D
 from keras_uncertainty.layers import StochasticDropout, DropConnectDense, FlipoutDense
 from keras_uncertainty.models import DeepEnsembleClassifier, DeepEnsembleRegressor
-from tensorflow.keras import backend as K
+from keras import backend as K
 
 from disentanglement.data.blobs import N_BLOBS_TRAINING_SAMPLES
 from disentanglement.settings import NUM_DEEP_ENSEMBLE_ESTIMATORS
 from disentanglement.util import custom_regression_gaussian_nll_loss
+
+
+def get_architecture(dataset_name: str, bnn_name: str, is_regression=False) -> Callable:
+    match dataset_name:
+        case "CIFAR10":
+            backbone_func = get_cifar10_convolutional_blocks
+            hidden_size = 64
+        case "Motor Imagery BCI":
+            backbone_func = get_eeg_convolutional_blocks
+            hidden_size = 32
+        case "blobs":
+            backbone_func = get_blobs_backbone
+            hidden_size=32
+        case "Fashion MNIST":
+            backbone_func = get_fashion_mnist_convolutional_blocks
+            hidden_size = 64
+        case "Wine":
+            backbone_func = get_wine_backbone
+            hidden_size = 16
+        case "AutoMPG":
+            backbone_func = get_auto_mpg_backbone
+            hidden_size = 16
+        case "UTKFace":
+            backbone_func = get_utkface_convolutional_blocks
+            hidden_size = 256
+        case _:
+            raise ValueError(f"No architecture implemented for {dataset_name}")
+
+    match bnn_name:
+        case "MC-Dropout":
+            bnn_func = get_dropout_from_backbone
+        case "MC-DropConnect":
+            bnn_func = get_dropconnect_from_backbone
+        case "Deep Ensemble":
+            if is_regression:
+                bnn_func = get_regression_ensemble_from_backbone
+            else:
+                bnn_func = get_ensemble_from_backbone
+        case "Flipout":
+            bnn_func = get_flipout_from_backbone
+        case _:
+            raise ValueError(f"No BNN implemented for {bnn_name}")
+
+    def bnn_constructor(n_training_samples):
+        return bnn_func(backbone_func, hidden_size=hidden_size, n_training_samples=n_training_samples)
+
+    return bnn_constructor
 
 
 class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
@@ -32,6 +81,12 @@ class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
         self.estimator_to_use += 1
 
         return prediction
+
+
+def get_blobs_backbone(input_shape=(2,)):
+    model = Sequential()
+    model.add(Dense(32, activation='relu', input_shape=input_shape))
+    return model
 
 
 def get_blobs_dropout_architecture(prob=0.2, **_):
@@ -120,6 +175,7 @@ def get_cifar10_convolutional_blocks(input_shape=(32, 32, 3)):
 
     return model
 
+
 def get_utkface_convolutional_blocks(input_shape=(128, 128, 3)):
     model = Sequential()
     model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))
@@ -149,8 +205,10 @@ def get_utkface_dropout_architecture(**_):
 def get_utkface_dropconnect_architecture(**_):
     return get_dropconnect_from_backbone(backbone_func=get_utkface_convolutional_blocks, hidden_size=256)
 
+
 def get_utkface_flipout_architecture(n_training_samples):
-    return get_flipout_from_backbone(backbone_func=get_utkface_convolutional_blocks, hidden_size=256, n_training_samples=n_training_samples)
+    return get_flipout_from_backbone(backbone_func=get_utkface_convolutional_blocks, hidden_size=256,
+                                     n_training_samples=n_training_samples)
 
 
 def get_utkface_ensemble_architecture(**_):
@@ -215,7 +273,6 @@ def get_regression_ensemble_from_backbone(backbone_func, prob=0.3, hidden_size=6
         hidden_representation = backbone(backbone.inputs)
         mean = Dense(1, activation="linear")(hidden_representation)
         var = Dense(1, activation="softplus")(hidden_representation)
-
 
         label_layer = Input((1,))
 

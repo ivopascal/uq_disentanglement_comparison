@@ -51,7 +51,9 @@ def load_and_combine_multiple_logs(experiment_config, architecture, meta_experim
                 None)
 
     return (UncertaintyResults(**gaussian_logit_df.to_dict(orient='list')),
-            UncertaintyResults(**it_df.to_dict(orient='list')), UncertaintyResults(**gaussian_logit_df_std.to_dict(orient='list')), UncertaintyResults(**it_df_std.to_dict(orient='list')))
+            UncertaintyResults(**it_df.to_dict(orient='list')),
+            UncertaintyResults(**gaussian_logit_df_std.to_dict(orient='list')),
+            UncertaintyResults(**it_df_std.to_dict(orient='list')))
 
 
 def save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results, meta_experiment_name):
@@ -73,10 +75,12 @@ def save_results_to_file(experiment_config, architecture, gaussian_logits_result
 
 def load_results_from_file(experiment_config, architecture, meta_experiment_name):
     if experiment_config.dataset_name == "Motor Imagery BCI":
-        return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name, n_logs=N_EEG_SUBJECTS)
+        return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name,
+                                              n_logs=N_EEG_SUBJECTS)
 
     if experiment_config.dataset_name in ["CIFAR10", "Fashion MNIST", "Wine", "AutoMPG", "UTKFace"]:
-        return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name, n_logs=N_CIFAR_REPETITIONS)
+        return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name,
+                                              n_logs=N_CIFAR_REPETITIONS)
 
     df_gaussian_logits = pd.read_csv(f"{DATA_FOLDER}/{meta_experiment_name}/{meta_experiment_name}_"
                                      f"{experiment_config.dataset_name}_{architecture.uq_name}_"

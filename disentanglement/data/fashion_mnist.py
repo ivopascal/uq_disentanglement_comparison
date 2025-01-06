@@ -1,12 +1,16 @@
 import keras
+import numpy as np
 
 from disentanglement.datatypes import Dataset
 from disentanglement.settings import TEST_MODE
 
 
-def get_train_test_cifar_10() -> Dataset:
-    (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
+def get_train_test_fashion_mnist() -> Dataset:
+    (x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
+    x_train = np.expand_dims(x_train, -1)
+    x_test = np.expand_dims(x_test, -1)
+
     if TEST_MODE:
         n_test_samples = 100
         x_test = x_test[:n_test_samples]

@@ -5,7 +5,7 @@ import pandas as pd
 from keras import backend as K
 from disentanglement.data.eeg import N_EEG_SUBJECTS
 from disentanglement.datatypes import UncertaintyResults
-from disentanglement.settings import DATA_FOLDER, TEST_MODE, N_CIFAR_REPETITIONS
+from disentanglement.settings import DATA_FOLDER, TEST_MODE, N_REPETITIONS
 
 
 def normalise(x):
@@ -78,9 +78,9 @@ def load_results_from_file(experiment_config, architecture, meta_experiment_name
         return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name,
                                               n_logs=N_EEG_SUBJECTS)
 
-    if experiment_config.dataset_name in ["CIFAR10", "Fashion MNIST", "Wine", "AutoMPG", "UTKFace"]:
+    if not experiment_config.dataset_name[-1].is_digit():
         return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name,
-                                              n_logs=N_CIFAR_REPETITIONS)
+                                              n_logs=N_REPETITIONS)
 
     df_gaussian_logits = pd.read_csv(f"{DATA_FOLDER}/{meta_experiment_name}/{meta_experiment_name}_"
                                      f"{experiment_config.dataset_name}_{architecture.uq_name}_"

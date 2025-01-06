@@ -1,12 +1,14 @@
 from functools import lru_cache
 
 from disentanglement.data.UTKFace import get_train_test_utkface_regression
+from disentanglement.data.auto_mpg import get_train_test_auto_mpg_regression
 from disentanglement.data.eeg import get_eeg_data
 
 from disentanglement.data.blobs import get_train_test_blobs
 
-from disentanglement.data.cifar10 import get_train_test_fashion_mnist, get_train_test_cifar_10, get_train_test_wine, \
-    get_train_test_auto_mpg_regression
+from disentanglement.data.cifar10 import get_train_test_cifar_10
+from disentanglement.data.fashion_mnist import get_train_test_fashion_mnist
+from disentanglement.data.wine import get_train_test_wine
 
 
 @lru_cache(maxsize=None)

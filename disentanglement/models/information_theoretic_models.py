@@ -1,17 +1,15 @@
 from typing import Union
 
+import numpy as np
+from keras.layers import Dense
 from keras.src.callbacks import CSVLogger
 from keras_uncertainty.models import StochasticClassifier
-from keras.layers import Dense
-
-import numpy as np
 from sklearn.metrics import accuracy_score
-from tensorflow.python.ops.losses.losses_impl import mean_squared_error
 
 from disentanglement.datatypes import Dataset
 from disentanglement.logging import TQDM
 from disentanglement.models.architectures import CustomDeepEnsembleClassifier
-from disentanglement.settings import BATCH_SIZE, TEST_MODE, NUM_SAMPLES, MODEL_TRAIN_VERBOSE
+from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, MODEL_TRAIN_VERBOSE
 
 
 def predictive_entropy(probs, axis=-1, eps=1e-6) -> np.ndarray:
@@ -36,7 +34,8 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
             estimator.add(Dense(n_classes, activation="softmax"))
             estimator.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
         csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
-        model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
+        model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE,
+                  callbacks=[csv_logger])
         TQDM.update(len(model.train_estimators))
         return model
 
@@ -45,7 +44,8 @@ def train_it_model(model_creator, x_train, y_train, n_classes, epochs) \
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
     csv_logger = CSVLogger('./training_logs.csv', append=True, separator=';')
-    model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE, callbacks=[csv_logger])
+    model.fit(x_train, y_train, epochs=epochs, batch_size=BATCH_SIZE, verbose=MODEL_TRAIN_VERBOSE,
+              callbacks=[csv_logger])
     mc_model = StochasticClassifier(model)
     TQDM.update(1)
 

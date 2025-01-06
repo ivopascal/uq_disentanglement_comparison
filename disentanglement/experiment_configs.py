@@ -4,7 +4,7 @@ from disentanglement.data.datasets import get_dataset_for_name
 from disentanglement.data.eeg import N_EEG_SUBJECTS
 from disentanglement.datatypes import UqModel, ExperimentConfig
 from disentanglement.models.architectures import get_architecture
-from disentanglement.settings import TEST_MODE, N_CIFAR_REPETITIONS
+from disentanglement.settings import TEST_MODE, N_REPETITIONS
 
 
 def get_test_mode_configs() -> List[ExperimentConfig]:
@@ -53,7 +53,7 @@ def get_configs_for_dataset_name(dataset_name, run_index=1, epochs=100, plotting
     )
 
 
-def get_configs_for_dataset_name_repetitions_and_plotting(n_repetitions=N_CIFAR_REPETITIONS, **kwargs) \
+def get_configs_for_dataset_name_repetitions_and_plotting(n_repetitions=N_REPETITIONS, **kwargs) \
         -> List[ExperimentConfig]:
     return [*[get_configs_for_dataset_name(**kwargs, run_index=i) for i in range(n_repetitions)],
             get_configs_for_dataset_name(**kwargs, plotting_mode=True)]

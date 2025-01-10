@@ -77,26 +77,30 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         TQDM.set_description(
             f"Running experiment  {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
         gaussian_logits_results, it_results = None, None
+        gaussian_logits_results_std, it_results_std = None, None
+
+        ## TRY LOADING RESULTS FROM FOLDER
         if from_folder:
             try:
                 gaussian_logits_results, it_results, gaussian_logits_results_std, it_results_std = load_results_from_file(
                     experiment_config, architecture,
                     meta_experiment_name=META_EXPERIMENT_NAME)
-                print(
-                    f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                print(f"Found results for {META_EXPERIMENT_NAME}, "
+                      f"on {experiment_config.dataset_name}, "
+                      f"with {architecture.uq_name}")
+                print(f"Correlation on changing dataset size - {architecture.uq_name}")
+                print_correlations(gaussian_logits_results, it_results)
+
             except FileNotFoundError:
                 print(
                     f"Failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
-        if not gaussian_logits_results:
-            gaussian_logits_results, it_results = run_decreasing_dataset(
-                experiment_config.dataset, architecture.model_function, architecture.epochs)
-            save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
-                                 meta_experiment_name=META_EXPERIMENT_NAME)
-            gaussian_logits_results_std, it_results_std = None, None
+                ## RUNNING THE EXPERIMENT
+                gaussian_logits_results, it_results = run_decreasing_dataset(
+                    experiment_config.dataset, architecture.model_function, architecture.epochs)
+                save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
+                                     meta_experiment_name=META_EXPERIMENT_NAME)
 
-        if not os.path.exists(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/"):
-            os.mkdir(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/")
-
+        ## PLOTTING
         is_first_column = arch_idx == 0
         is_final_column = arch_idx == len(experiment_config.models) - 1
 
@@ -110,10 +114,8 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
         axes[0][arch_idx].set_title(architecture.uq_name, fontsize=font_size)
         axes[1][arch_idx].set_xlabel("Dataset size", fontsize=font_size)
 
-        if gaussian_logits_results_std:
-            print(f"Changing dataset size - {architecture.uq_name}")
-            print_correlations(gaussian_logits_results, it_results)
 
+        ## ADD HEADERS & LEGEND TO FIRST COLUMN
         if is_first_column:
             axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty", fontsize=font_size)
             axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty", fontsize=font_size)
@@ -127,6 +129,8 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
             axes[0][arch_idx].legend(handles=handles, labels=labels, loc='upper left', fontsize=10)
 
     fig.tight_layout()
+    if not os.path.exists(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/"):
+        os.mkdir(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/")
 
     if TEST_MODE:
         fig.savefig(

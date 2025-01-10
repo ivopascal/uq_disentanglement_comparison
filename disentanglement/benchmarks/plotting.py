@@ -41,5 +41,3 @@ def plot_confidence_intervals(ax, results, std, get_string, label, color=None):
                     uncertainties_mean - 1.96 * uncertainties_std,
                     uncertainties_mean + 1.96 * uncertainties_std,
                     alpha=0.3, label=label, color=color)
-
-

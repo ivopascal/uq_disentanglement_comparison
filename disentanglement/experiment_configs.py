@@ -9,14 +9,16 @@ from disentanglement.settings import TEST_MODE, N_REPETITIONS
 
 def get_test_mode_configs() -> List[ExperimentConfig]:
     return [
-        get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=False,
-                                     run_label_noise_experiments=False,
-                                     run_ood_class_experiments=True, epochs=100),
-        get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=50),
-        get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
-                                     run_decreasing_dataset_experiments=False,
-                                     run_label_noise_experiments=True, epochs=100),
-        get_configs_for_dataset_name("Fashion MNIST", epochs=100)
+        # get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=False,
+        #                              run_label_noise_experiments=False,
+        #                              run_ood_class_experiments=True, epochs=10),
+        # get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=5),
+        # get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
+        #                              run_decreasing_dataset_experiments=False,
+        #                              run_label_noise_experiments=True, epochs=10),
+        # get_configs_for_dataset_name("Fashion MNIST", epochs=10),
+        get_configs_for_dataset_name("UTKFace", epochs=1, run_ood_class_experiments=False,
+                                     run_decreasing_dataset_experiments=False)
     ]
 
 
@@ -32,9 +34,9 @@ def get_configs_for_dataset_name(dataset_name, run_index=1, epochs=100, plotting
     if run_label_noise_experiments:
         meta_experiments.append("label_noise")
 
-    BNN_name_epochs = {"MC-Dropout": epochs,
+    BNN_name_epochs = {# "MC-Dropout": epochs,
                        "MC-DropConnect": epochs,
-                       "Flipout": epochs * 5,
+                       # "Flipout": epochs * 5,
                        "Deep Ensemble": epochs}
 
     if plotting_mode:  # Special case for plotting multiple results. The run-index will be ignored
@@ -47,7 +49,7 @@ def get_configs_for_dataset_name(dataset_name, run_index=1, epochs=100, plotting
     return ExperimentConfig(
         dataset_name=dataset_name_for_config,
         dataset=dataset,
-        models=[UqModel(get_architecture(dataset_name, bnn_name=bnn_name), bnn_name, epochs=epochs)
+        models=[UqModel(get_architecture(dataset_name, bnn_name=bnn_name, is_regression=dataset.is_regression), bnn_name, epochs=epochs)
                 for bnn_name, epochs in BNN_name_epochs.items()],
         meta_experiments=meta_experiments,
     )

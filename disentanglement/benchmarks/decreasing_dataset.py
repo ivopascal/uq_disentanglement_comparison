@@ -13,6 +13,7 @@ from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.logging import TQDM
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
+from disentanglement.models.logit_variance import get_average_uncertainty_logit_variance
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
 from disentanglement.util import load_results_from_file, save_results_to_file, print_correlations
 
@@ -56,6 +57,8 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
         small_dataset = create_subsampled_dataset(X_train, y_train, dataset, dataset_size)
         adjusted_epochs = int(epochs / dataset_size)
 
+        print(get_average_uncertainty_logit_variance(small_dataset, model_function, adjusted_epochs))
+
         gl_results.append_values(
             *get_average_uncertainty_gaussian_logits(small_dataset, model_function, adjusted_epochs),
             dataset_size)
@@ -67,6 +70,32 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs):
     return gl_results, it_results
 
 
+def request_results(experiment_config, architecture, from_folder):
+    if from_folder:
+        try:
+            gaussian_logits_results, it_results, gaussian_logits_results_std, it_results_std = load_results_from_file(
+                experiment_config, architecture,
+                meta_experiment_name=META_EXPERIMENT_NAME)
+            print(f"Found results for {META_EXPERIMENT_NAME}, "
+                  f"on {experiment_config.dataset_name}, "
+                  f"with {architecture.uq_name}")
+            print(f"Correlation on changing dataset size - {architecture.uq_name}")
+            print_correlations(gaussian_logits_results, it_results)
+
+            return gaussian_logits_results, it_results, gaussian_logits_results_std, it_results_std
+
+        except FileNotFoundError:
+            print(
+                f"Failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+
+    gaussian_logits_results, it_results = run_decreasing_dataset(
+        experiment_config.dataset, architecture.model_function, architecture.epochs)
+    save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
+                         meta_experiment_name=META_EXPERIMENT_NAME)
+
+    return gaussian_logits_results, it_results, None, None
+
+
 def plot_decreasing_dataset(experiment_config, from_folder=False):
     fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
     accuracy_y_ax_to_share = None
@@ -76,29 +105,9 @@ def plot_decreasing_dataset(experiment_config, from_folder=False):
     for arch_idx, architecture in enumerate(experiment_config.models):
         TQDM.set_description(
             f"Running experiment  {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
-        gaussian_logits_results, it_results = None, None
-        gaussian_logits_results_std, it_results_std = None, None
 
-        ## TRY LOADING RESULTS FROM FOLDER
-        if from_folder:
-            try:
-                gaussian_logits_results, it_results, gaussian_logits_results_std, it_results_std = load_results_from_file(
-                    experiment_config, architecture,
-                    meta_experiment_name=META_EXPERIMENT_NAME)
-                print(f"Found results for {META_EXPERIMENT_NAME}, "
-                      f"on {experiment_config.dataset_name}, "
-                      f"with {architecture.uq_name}")
-                print(f"Correlation on changing dataset size - {architecture.uq_name}")
-                print_correlations(gaussian_logits_results, it_results)
-
-            except FileNotFoundError:
-                print(
-                    f"Failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
-                ## RUNNING THE EXPERIMENT
-                gaussian_logits_results, it_results = run_decreasing_dataset(
-                    experiment_config.dataset, architecture.model_function, architecture.epochs)
-                save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
-                                     meta_experiment_name=META_EXPERIMENT_NAME)
+        gaussian_logits_results, it_results, gaussian_logits_results_std, it_results_std = request_results(
+            experiment_config, architecture, from_folder)
 
         ## PLOTTING
         is_first_column = arch_idx == 0

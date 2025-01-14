@@ -12,9 +12,13 @@ from disentanglement.models.architectures import CustomDeepEnsembleClassifier
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, MODEL_TRAIN_VERBOSE
 
 
-def predictive_entropy(probs, axis=-1, eps=1e-6) -> np.ndarray:
-    probs = np.mean(probs, axis=0)
+def entropy(probs, axis=-1, eps=1e-6):
     return -np.sum(probs * np.log(probs + eps), axis=axis)
+
+
+def predictive_entropy(probs, axis=-1) -> np.ndarray:
+    probs = np.mean(probs, axis=0)
+    return entropy(probs, axis)
 
 
 def expected_entropy(probs, eps=1e-6) -> np.ndarray:

@@ -1,5 +1,3 @@
-from functools import lru_cache
-
 from disentanglement.data.UTKFace import get_train_test_utkface_regression
 from disentanglement.data.auto_mpg import get_train_test_auto_mpg_regression
 from disentanglement.data.eeg import get_eeg_data

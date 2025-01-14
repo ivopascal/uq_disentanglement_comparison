@@ -14,7 +14,8 @@ from disentanglement.logging import TQDM
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_LABEL_NOISE_STEPS
-from disentanglement.util import load_results_from_file, save_results_to_file, print_correlations
+from disentanglement.util import print_correlations
+from disentanglement.results_storing import save_results_to_file, load_results_from_file
 
 META_EXPERIMENT_NAME = 'label_noise'
 

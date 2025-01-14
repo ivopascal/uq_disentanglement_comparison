@@ -1,8 +1,7 @@
 from typing import List
 
-from disentanglement.data.eeg import N_EEG_SUBJECTS
-
 from disentanglement.data.datasets import get_dataset_for_name
+from disentanglement.data.eeg import N_EEG_SUBJECTS
 from disentanglement.datatypes import UqModel, ExperimentConfig
 from disentanglement.models.architectures import get_architecture
 from disentanglement.settings import TEST_MODE, N_REPETITIONS
@@ -79,3 +78,5 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="AutoMPG", run_ood_class_experiments=False),
         *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="UTKFace", run_ood_class_experiments=False),
     ]
+
+

@@ -15,7 +15,7 @@ from disentanglement.models.information_theoretic_models import train_it_model, 
 from disentanglement.models.gaussian_logits_models import train_gaussian_logits_model, uncertainty
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE, FIGURE_FOLDER
 from disentanglement.logging import TQDM
-from disentanglement.util import load_results_from_file, save_results_to_file
+from disentanglement.results_storing import save_results_to_file, load_results_from_file
 
 META_EXPERIMENT_NAME = "ood_class"
 

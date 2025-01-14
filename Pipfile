@@ -12,6 +12,8 @@ pandas = "*"
 moabb = "*"
 mne = "*"
 mne-bids = "*"
+tensorflow-metal = "*"
+disentanglement = {path = "."}
 
 [dev-packages]
 

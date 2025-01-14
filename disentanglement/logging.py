@@ -1,9 +1,8 @@
-import numpy as np
-from disentanglement.settings import NUM_DEEP_ENSEMBLE_ESTIMATORS, TEST_MODE, NUM_DECREASING_DATASET_STEPS, \
-    NUM_LABEL_NOISE_STEPS
+from tqdm import tqdm
 
 from disentanglement.experiment_configs import get_experiment_configs
-from tqdm import tqdm
+from disentanglement.settings import NUM_DEEP_ENSEMBLE_ESTIMATORS, TEST_MODE, NUM_DECREASING_DATASET_STEPS, \
+    NUM_LABEL_NOISE_STEPS
 
 number_of_models_to_train = 0
 for experiment_config in get_experiment_configs():

@@ -1,210 +1,68 @@
 from typing import List
 
-from disentanglement.data.blobs import get_train_test_blobs
-from disentanglement.data.cifar10 import get_train_test_cifar_10, get_train_test_fashion_mnist, get_train_test_wine
-from disentanglement.data.eeg import get_eeg_data
+from disentanglement.data.eeg import N_EEG_SUBJECTS
+
+from disentanglement.data.datasets import get_dataset_for_name
 from disentanglement.datatypes import UqModel, ExperimentConfig
-from disentanglement.models.architectures import get_blobs_dropout_architecture, \
-    get_blobs_dropconnect_architecture, get_blobs_ensemble_architecture, \
-    get_blobs_flipout_architecture, get_cifar10_flipout_architecture, get_cifar10_dropout_architecture, \
-    get_cifar10_dropconnect_architecture, \
-    get_cifar10_ensemble_architecture, get_eeg_dropout_architecture, get_eeg_dropconnect_architecture, \
-    get_eeg_flipout_architecture, get_eeg_ensemble_architecture, get_fashion_mnist_dropconnect_architecture, \
-    get_fashion_mnist_dropout_architecture, get_fashion_mnist_flipout_architecture, \
-    get_fashion_mnist_ensemble_architecture, get_wine_dropout_architecture, get_wine_dropconnect_architecture, \
-    get_wine_flipout_architecture, get_wine_ensemble_architecture
-from disentanglement.settings import TEST_MODE, N_CIFAR_REPETITIONS
+from disentanglement.models.architectures import get_architecture
+from disentanglement.settings import TEST_MODE, N_REPETITIONS
 
 
 def get_test_mode_configs() -> List[ExperimentConfig]:
     return [
-        ExperimentConfig(
-            dataset_name="CIFAR10",
-            dataset=get_train_test_cifar_10(),
-            models=[UqModel(get_cifar10_dropout_architecture, "MC-Dropout", epochs=100),
-                    UqModel(get_cifar10_dropconnect_architecture, "MC-DropConnect", epochs=100),
-                    UqModel(get_cifar10_flipout_architecture, "Flipout", epochs=500),
-                    UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
-                    ],
-            meta_experiments=["ood_class"
-                              ],
-        ),
-        ExperimentConfig(
-            dataset_name="blobs",
-            dataset=get_train_test_blobs(),
-            models=[
-                UqModel(get_blobs_dropout_architecture, "MC-Dropout", epochs=50),
-                UqModel(get_blobs_ensemble_architecture, "Deep Ensemble", epochs=50),
-                UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=50),
-                UqModel(get_blobs_flipout_architecture, "Flipout", epochs=500)
-            ],
-            meta_experiments=[
-                "decreasing_dataset",
-                "label_noise"
-            ]
-        ),
-        ExperimentConfig(
-            dataset_name="Motor Imagery BCI Test",
-            dataset=get_eeg_data(subject_id=0),
-            models=[
-                UqModel(get_eeg_dropout_architecture, "MC-Dropout", epochs=100),
-                UqModel(get_eeg_dropconnect_architecture, "MC-DropConnect",
-                        epochs=100),
-                UqModel(get_eeg_flipout_architecture, "Flipout",
-                        epochs=500),
-                UqModel(get_eeg_ensemble_architecture, "Deep Ensemble", epochs=100)
-            ],
-            meta_experiments=["decreasing_dataset", ]
-        ),
-
-        get_fashion_mnist_configs(meta_experiments=["decreasing_dataset",
-                                                    "label_noise",
-                                                    "ood_class"
-                                                    ]),
+        get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=False,
+                                     run_label_noise_experiments=False,
+                                     run_ood_class_experiments=True, epochs=10),
+        get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=5),
+        get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
+                                     run_decreasing_dataset_experiments=False,
+                                     run_label_noise_experiments=True, epochs=10),
+        get_configs_for_dataset_name("Fashion MNIST", epochs=10),
+        get_configs_for_dataset_name("UTKFace", epochs=1, run_ood_class_experiments=False,
+                                     run_decreasing_dataset_experiments=False)
     ]
 
 
-def get_fashion_mnist_configs(meta_experiments=None, run_index=1) -> ExperimentConfig:
-    if meta_experiments is None:
-        meta_experiments = []
-    return ExperimentConfig(
-        dataset_name=f"Fashion MNIST {run_index}",
-        dataset=get_train_test_fashion_mnist(),
-        models=[UqModel(get_fashion_mnist_dropout_architecture, "MC-Dropout", epochs=100),
-                UqModel(get_fashion_mnist_dropconnect_architecture, "MC-DropConnect", epochs=100),
-                UqModel(get_fashion_mnist_flipout_architecture, "Flipout", epochs=500),
-                UqModel(get_fashion_mnist_ensemble_architecture, "Deep Ensemble", epochs=100),
-                ],
-        meta_experiments=meta_experiments,
-    )
+def get_configs_for_dataset_name(dataset_name, run_index=1, epochs=100, plotting_mode=False,
+                                 run_ood_class_experiments=True,
+                                 run_decreasing_dataset_experiments=True,
+                                 run_label_noise_experiments=True) -> ExperimentConfig:
+    meta_experiments = []
+    # if run_ood_class_experiments:
+    #     meta_experiments.append("ood_class")
+    if run_decreasing_dataset_experiments:
+        meta_experiments.append("decreasing_dataset")
+    if run_label_noise_experiments:
+        meta_experiments.append("label_noise")
 
+    BNN_name_epochs = {"MC-Dropout": epochs,
+                       "MC-DropConnect": epochs,
+                       "Flipout": epochs * 5,
+                       "Deep Ensemble": epochs}
 
-def get_wine_config(meta_experiments=None, run_index=1) -> ExperimentConfig:
-    if meta_experiments is None:
-        meta_experiments = []
-    return ExperimentConfig(
-        dataset_name=f"Wine {run_index}",
-        dataset=get_train_test_wine(),
-        models=[UqModel(get_wine_dropout_architecture, "MC-Dropout", epochs=100),
-                UqModel(get_wine_dropconnect_architecture, "MC-DropConnect", epochs=100),
-                UqModel(get_wine_flipout_architecture, "Flipout", epochs=500),
-                UqModel(get_wine_ensemble_architecture, "Deep Ensemble", epochs=100),
-                ],
-        meta_experiments=meta_experiments,
-    )
+    if plotting_mode:  # Special case for plotting multiple results. The run-index will be ignored
+        dataset_name_for_config = dataset_name
+        dataset = None
+        is_regression = False
 
-
-def get_wine_plotting_config(meta_experiments=None) -> ExperimentConfig:
-    if meta_experiments is None:
-        meta_experiments = []
-    models = get_wine_config(run_index=0, meta_experiments=meta_experiments).models
+    else:
+        dataset_name_for_config = f"{dataset_name} {run_index}"
+        dataset = get_dataset_for_name(dataset_name, run_index)
+        is_regression = dataset.is_regression
 
     return ExperimentConfig(
-        dataset_name="Wine",
-        dataset=None,
-        models=models,
-        meta_experiments=meta_experiments
-    )
+            dataset_name=dataset_name_for_config,
+            dataset=dataset,
+            models=[UqModel(get_architecture(dataset_name, bnn_name=bnn_name, is_regression=is_regression), bnn_name, epochs=epochs)
+                    for bnn_name, epochs in BNN_name_epochs.items()],
+            meta_experiments=meta_experiments,
+        )
 
 
-def get_cifar10_config(meta_experiments=None, run_index=1) -> ExperimentConfig:
-    if meta_experiments is None:
-        meta_experiments = []
-
-    return ExperimentConfig(
-        dataset_name=f"CIFAR10 {run_index}",
-        dataset=get_train_test_cifar_10(),
-        models=[UqModel(get_cifar10_dropout_architecture, "MC-Dropout", epochs=100),
-                UqModel(get_cifar10_dropconnect_architecture, "MC-DropConnect", epochs=100),
-                UqModel(get_cifar10_flipout_architecture, "Flipout", epochs=500),
-                UqModel(get_cifar10_ensemble_architecture, "Deep Ensemble", epochs=100),
-                ],
-        meta_experiments=meta_experiments,
-    )
-
-
-def get_cifar10_plotting_config(meta_experiments=None) -> ExperimentConfig:
-    if meta_experiments is None:
-        meta_experiments = []
-
-    models = get_cifar10_config(run_index=0, meta_experiments=meta_experiments).models
-
-    return ExperimentConfig(
-        dataset_name="CIFAR10",
-        dataset=None,
-        models=models,
-        meta_experiments=meta_experiments
-    )
-
-
-def get_fashion_mnist_plotting_config(meta_experiments=None) -> ExperimentConfig:
-    if meta_experiments is None:
-        meta_experiments = []
-
-    models = get_fashion_mnist_configs(run_index=0, meta_experiments=meta_experiments).models
-
-    return ExperimentConfig(
-        dataset_name="Fashion MNIST",
-        dataset=None,
-        models=models,
-        meta_experiments=meta_experiments
-    )
-
-
-def get_blobs_config(meta_experiments=None) -> ExperimentConfig:
-    if meta_experiments is None:
-        meta_experiments = []
-
-    return ExperimentConfig(
-        dataset_name="blobs",
-        dataset=get_train_test_blobs(),
-        models=[UqModel(get_blobs_dropout_architecture, "MC-Dropout", epochs=50),
-                UqModel(get_blobs_ensemble_architecture, "Deep Ensemble", epochs=50),
-                UqModel(get_blobs_dropconnect_architecture, "MC-DropConnect", epochs=50),
-                UqModel(get_blobs_flipout_architecture, "Flipout", epochs=50)
-                ],
-        meta_experiments=meta_experiments,
-    )
-
-
-def get_eeg_config_single_subject(subject_id, meta_experiments=None) -> ExperimentConfig:
-    if meta_experiments is None:
-        meta_experiments = []
-
-    return ExperimentConfig(
-        dataset_name=f"Motor Imagery BCI {subject_id}",
-        dataset=get_eeg_data(subject_id),
-        models=[
-            UqModel(get_eeg_dropout_architecture, "MC-Dropout", epochs=100),
-            UqModel(get_eeg_dropconnect_architecture, "MC-DropConnect",
-                    epochs=100),
-            UqModel(get_eeg_flipout_architecture, "Flipout", epochs=500),
-            UqModel(get_eeg_ensemble_architecture, "Deep Ensemble", epochs=100)
-        ],
-        meta_experiments=meta_experiments,
-    )
-
-
-def get_eeg_plotting_config(meta_experiments=None) -> ExperimentConfig:
-    if meta_experiments is None:
-        meta_experiments = []
-
-    models = get_eeg_config_single_subject(subject_id=0, meta_experiments=meta_experiments).models
-
-    return ExperimentConfig(
-        dataset_name="Motor Imagery BCI",
-        dataset=None,
-        models=models,
-        meta_experiments=meta_experiments
-    )
-
-
-def get_eeg_configs(meta_experiments=None) -> List[ExperimentConfig]:
-    if meta_experiments is None:
-        meta_experiments = []
-
-    return [get_eeg_config_single_subject(subject_id, meta_experiments=meta_experiments) for subject_id in
-            range(9)]
+def get_configs_for_dataset_name_repetitions_and_plotting(n_repetitions=N_REPETITIONS, **kwargs) \
+        -> List[ExperimentConfig]:
+    return [*[get_configs_for_dataset_name(**kwargs, run_index=i) for i in range(n_repetitions)],
+            get_configs_for_dataset_name(**kwargs, plotting_mode=True)]
 
 
 def get_experiment_configs() -> List[ExperimentConfig]:
@@ -212,37 +70,12 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         return get_test_mode_configs()
 
     return [
-        *[get_cifar10_config(meta_experiments=["decreasing_dataset",
-                                               "label_noise",
-                                               "ood_class"
-                                               ], run_index=i) for i in range(N_CIFAR_REPETITIONS)]
-        ,
-        get_cifar10_plotting_config(["decreasing_dataset",
-                                     "label_noise",
-                                     "ood_class"]),
-        get_blobs_config(meta_experiments=["decreasing_dataset",
-                                           "label_noise",
-                                           ]),
-        *get_eeg_configs(meta_experiments=["decreasing_dataset",
-                                           "label_noise",
-                                           "ood_class"
-                                           ]),
-        get_eeg_plotting_config(meta_experiments=["decreasing_dataset",
-                                                  "label_noise",
-                                                  "ood_class"
-                                                  ]),
-        *[get_fashion_mnist_configs(meta_experiments=["decreasing_dataset",
-                                                      "label_noise",
-                                                      "ood_class"
-                                                      ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::-1],
-        get_fashion_mnist_plotting_config(["decreasing_dataset",
-                                           "label_noise",
-                                           "ood_class"]),
-        *[get_wine_config(meta_experiments=["decreasing_dataset",
-                                            "label_noise",
-                                            "ood_class"
-                                            ], run_index=i) for i in range(N_CIFAR_REPETITIONS)][::-1],
-        get_wine_plotting_config(["decreasing_dataset",
-                                  "label_noise",
-                                  "ood_class"])
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="CIFAR10"),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="blobs", run_ood_class_experiments=False),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="Motor Imagery BCI",
+                                                               n_repetitions=N_EEG_SUBJECTS),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="Fashion MNIST"),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="Wine"),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="AutoMPG", run_ood_class_experiments=False),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="UTKFace", run_ood_class_experiments=False),
     ]

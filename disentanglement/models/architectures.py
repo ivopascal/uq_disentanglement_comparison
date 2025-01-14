@@ -1,15 +1,63 @@
+from typing import Callable
+
 import numpy as np
-from keras import Sequential, Input
-from keras.src.constraints import max_norm
-from keras.src.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout, Activation, BatchNormalization, \
-    AveragePooling2D
-from tensorflow.keras import backend as K
-
+from keras import Input, Model
+from keras.src.layers import Dense, Dropout
 from keras_uncertainty.layers import StochasticDropout, DropConnectDense, FlipoutDense
-from keras_uncertainty.models import DeepEnsembleClassifier
+from keras_uncertainty.models import DeepEnsembleClassifier, DeepEnsembleRegressor
 
-from disentanglement.data.blobs import N_BLOBS_TRAINING_SAMPLES
+from disentanglement.models.backbones import get_cifar10_convolutional_blocks, get_eeg_convolutional_blocks, \
+    get_fashion_mnist_convolutional_blocks, get_wine_backbone, get_auto_mpg_backbone, \
+    get_utkface_convolutional_blocks, get_blobs_backbone
 from disentanglement.settings import NUM_DEEP_ENSEMBLE_ESTIMATORS
+from disentanglement.util import custom_regression_gaussian_nll_loss
+
+
+def get_architecture(dataset_name: str, bnn_name: str, is_regression=False) -> Callable:
+    match dataset_name:
+        case "CIFAR10":
+            backbone_func = get_cifar10_convolutional_blocks
+            hidden_size = 64
+        case "Motor Imagery BCI":
+            backbone_func = get_eeg_convolutional_blocks
+            hidden_size = 32
+        case "blobs":
+            backbone_func = get_blobs_backbone
+            hidden_size = 32
+        case "Fashion MNIST":
+            backbone_func = get_fashion_mnist_convolutional_blocks
+            hidden_size = 64
+        case "Wine":
+            backbone_func = get_wine_backbone
+            hidden_size = 16
+        case "AutoMPG":
+            backbone_func = get_auto_mpg_backbone
+            hidden_size = 16
+        case "UTKFace":
+            backbone_func = get_utkface_convolutional_blocks
+            hidden_size = 256
+        case _:
+            raise ValueError(f"No architecture implemented for {dataset_name}")
+
+    match bnn_name:
+        case "MC-Dropout":
+            bnn_func = get_dropout_from_backbone
+        case "MC-DropConnect":
+            bnn_func = get_dropconnect_from_backbone
+        case "Deep Ensemble":
+            if is_regression:
+                bnn_func = get_regression_ensemble_from_backbone
+            else:
+                bnn_func = get_ensemble_from_backbone
+        case "Flipout":
+            bnn_func = get_flipout_from_backbone
+        case _:
+            raise ValueError(f"No BNN implemented for {bnn_name}")
+
+    def bnn_constructor(n_training_samples):
+        return bnn_func(backbone_func, hidden_size=hidden_size, n_training_samples=n_training_samples)
+
+    return bnn_constructor
 
 
 class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
@@ -34,107 +82,6 @@ class CustomDeepEnsembleClassifier(DeepEnsembleClassifier):
         return prediction
 
 
-def get_blobs_dropout_architecture(prob=0.2, **_):
-    model = Sequential()
-    model.add(Dense(32, activation="relu", input_shape=(2,)))
-    model.add(StochasticDropout(prob))
-    model.add(Dense(32, activation="relu"))
-    model.add(StochasticDropout(prob))
-    return model
-
-
-def get_blobs_flipout_architecture(n_training_samples=N_BLOBS_TRAINING_SAMPLES):
-    num_batches = n_training_samples / 32
-    kl_weight = 1.0 / num_batches
-    prior_params = {
-        'prior_sigma_1': 5.0,
-        'prior_sigma_2': 2.0,
-        'prior_pi': 0.5
-    }
-
-    model = Sequential()
-    model.add(FlipoutDense(32, kl_weight, **prior_params, activation="relu", input_shape=(2,)))
-    model.add(FlipoutDense(32, kl_weight, **prior_params, activation="relu"))
-
-    return model
-
-
-def get_blobs_ensemble_architecture(prob=0.2, **_):
-    def model_fn():
-        model = Sequential()
-        model.add(Dense(32, activation="relu", input_shape=(2,)))
-        model.add(Dropout(prob))
-        model.add(Dense(32, activation="relu"))
-        model.add(Dropout(prob))
-
-        model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-
-        return model
-
-    ensemble_model = CustomDeepEnsembleClassifier(model_fn, num_estimators=NUM_DEEP_ENSEMBLE_ESTIMATORS)
-    return ensemble_model
-
-
-def get_blobs_dropconnect_architecture(prob=0.2, **_):
-    model = Sequential()
-    model.add(DropConnectDense(32, activation="relu", input_shape=(2,), prob=prob))
-    model.add(DropConnectDense(32, activation="relu", prob=prob))
-
-    return model
-
-
-# need these for ShallowConvNet
-def square(x):
-    return K.square(x)
-
-
-def log(x):
-    return K.log(K.clip(x, min_value=1e-7, max_value=10000))
-
-
-def get_eeg_convolutional_blocks(channels=22, samples=513):
-    # This is based off ShallowConvNet, but we can add a (Bayesian) FC layer after the conv block
-    model = Sequential()
-    model.add(Conv2D(40, (1, 13),
-                     input_shape=(channels, samples, 1),
-                     kernel_constraint=max_norm(2., axis=(0, 1, 2))))
-    model.add(Conv2D(40, (channels, 1), use_bias=False,
-                     kernel_constraint=max_norm(2., axis=(0, 1, 2))))
-    model.add(BatchNormalization(epsilon=1e-05, momentum=0.9))
-    model.add(Activation(square))
-    model.add(AveragePooling2D(pool_size=(1, 35), strides=(1, 7)))
-    model.add(Activation(log))
-    model.add(Flatten())
-
-    return model
-
-
-def get_cifar10_convolutional_blocks(input_shape=(32, 32, 3)):
-    model = Sequential()
-    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(Flatten())
-
-    return model
-
-
-def get_fashion_mnist_convolutional_blocks():
-    return get_cifar10_convolutional_blocks(input_shape=(28, 28, 1))
-
-
-def get_wine_backbone(input_shape=13):
-    model = Sequential()
-    model.add(Input(input_shape))
-    model.add(Dense(32))
-    model.add(Dense(32))
-
-    return model
-
-
-
 def get_dropout_from_backbone(backbone_func, prob=0.3, hidden_size=64, **_):
     model = backbone_func()
     model.add(Dense(hidden_size, activation='relu'))
@@ -154,6 +101,29 @@ def get_ensemble_from_backbone(backbone_func, prob=0.3, hidden_size=64, **_):
         return model
 
     ensemble_model = CustomDeepEnsembleClassifier(model_fn, num_estimators=NUM_DEEP_ENSEMBLE_ESTIMATORS)
+    return ensemble_model
+
+
+def get_regression_ensemble_from_backbone(backbone_func, prob=0.3, hidden_size=64, **_):
+    def model_fn():
+        backbone = backbone_func()
+        hidden_representation = backbone(backbone.inputs)
+        mean = Dense(1, activation="linear")(hidden_representation)
+        var = Dense(1, activation="softplus")(hidden_representation)
+
+        label_layer = Input((1,))
+
+        train_model = Model([backbone.inputs, label_layer], [mean, var], name="train_model")
+        pred_model = Model(backbone.inputs, [mean, var], name="pred_model")
+
+        loss = custom_regression_gaussian_nll_loss(label_layer, mean, var)
+        train_model.add_loss(loss)
+
+        train_model.compile(optimizer="adam")
+
+        return train_model, pred_model
+
+    ensemble_model = DeepEnsembleRegressor(model_fn, num_estimators=NUM_DEEP_ENSEMBLE_ESTIMATORS)
     return ensemble_model
 
 
@@ -177,71 +147,3 @@ def get_dropconnect_from_backbone(backbone_func, hidden_size=64, prob=0.3, **_):
     model.add(DropConnectDense(hidden_size, activation='relu', prob=prob))
 
     return model
-
-
-def get_cifar10_flipout_architecture(n_training_samples):
-    return get_flipout_from_backbone(get_cifar10_convolutional_blocks, hidden_size=64,
-                                     n_training_samples=n_training_samples)
-
-
-def get_cifar10_dropout_architecture(**_):
-    return get_dropout_from_backbone(get_cifar10_convolutional_blocks, hidden_size=64)
-
-
-def get_cifar10_dropconnect_architecture(**_):
-    return get_dropconnect_from_backbone(get_cifar10_convolutional_blocks, hidden_size=64)
-
-
-def get_cifar10_ensemble_architecture(**_):
-    return get_ensemble_from_backbone(get_cifar10_convolutional_blocks, hidden_size=64)
-
-
-def get_fashion_mnist_flipout_architecture(n_training_samples):
-    return get_flipout_from_backbone(get_fashion_mnist_convolutional_blocks, hidden_size=64,
-                                     n_training_samples=n_training_samples)
-
-
-def get_fashion_mnist_dropout_architecture(**_):
-    return get_dropout_from_backbone(get_fashion_mnist_convolutional_blocks, hidden_size=64)
-
-
-def get_fashion_mnist_dropconnect_architecture(**_):
-    return get_dropconnect_from_backbone(get_fashion_mnist_convolutional_blocks, hidden_size=64)
-
-
-def get_fashion_mnist_ensemble_architecture(**_):
-    return get_ensemble_from_backbone(get_fashion_mnist_convolutional_blocks, hidden_size=64)
-
-
-def get_wine_flipout_architecture(n_training_samples):
-    return get_flipout_from_backbone(get_wine_backbone, hidden_size=16,
-                                     n_training_samples=n_training_samples)
-
-
-def get_wine_dropout_architecture(**_):
-    return get_dropout_from_backbone(get_wine_backbone, hidden_size=16)
-
-
-def get_wine_dropconnect_architecture(**_):
-    return get_dropconnect_from_backbone(get_wine_backbone, hidden_size=16)
-
-
-def get_wine_ensemble_architecture(**_):
-    return get_ensemble_from_backbone(get_wine_backbone, hidden_size=16)
-
-
-def get_eeg_flipout_architecture(n_training_samples, **_):
-    return get_flipout_from_backbone(get_eeg_convolutional_blocks, hidden_size=32,
-                                     n_training_samples=n_training_samples)
-
-
-def get_eeg_dropout_architecture(**_):
-    return get_dropout_from_backbone(get_eeg_convolutional_blocks, hidden_size=32)
-
-
-def get_eeg_dropconnect_architecture(**_):
-    return get_dropconnect_from_backbone(get_eeg_convolutional_blocks, hidden_size=32)
-
-
-def get_eeg_ensemble_architecture(**_):
-    return get_ensemble_from_backbone(get_eeg_convolutional_blocks, hidden_size=32)

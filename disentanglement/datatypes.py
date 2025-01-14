@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Iterable, Union, Optional
+from typing import List, Callable, Iterable, Union, Optional
 
 import numpy as np
 
@@ -9,6 +9,23 @@ class UqModel:
     model_function: Callable
     uq_name: str
     epochs: int
+
+
+@dataclass
+class Dataset:
+    X_train: np.ndarray
+    y_train: np.ndarray
+    X_test: np.ndarray
+    y_test: np.ndarray
+    is_regression: field(default=False)
+
+
+@dataclass
+class ExperimentConfig:
+    dataset_name: str
+    dataset: Optional[Dataset]
+    models: List[UqModel]
+    meta_experiments: List[str]
 
 
 # This is used for plotting accuracy, aleatoric and epistemic uncertainty while changing a certain parameter.
@@ -25,19 +42,3 @@ class UncertaintyResults:
         self.aleatoric_uncertainties.append(aleatoric_uncertainty)
         self.epistemic_uncertainties.append(epistemic_uncertainty)
         self.changed_parameter_values.append(parameter)
-
-
-@dataclass
-class Dataset:
-    X_train: np.ndarray
-    y_train: np.ndarray
-    X_test: np.ndarray
-    y_test: np.ndarray
-
-
-@dataclass
-class ExperimentConfig:
-    dataset_name: str
-    dataset: Optional[Dataset]
-    models: List[UqModel]
-    meta_experiments: List[str]

@@ -1,5 +1,7 @@
 from typing import List
 
+from disentanglement.data.eeg import N_EEG_SUBJECTS
+
 from disentanglement.data.datasets import get_dataset_for_name
 from disentanglement.datatypes import UqModel, ExperimentConfig
 from disentanglement.models.architectures import get_architecture
@@ -8,14 +10,14 @@ from disentanglement.settings import TEST_MODE, N_REPETITIONS
 
 def get_test_mode_configs() -> List[ExperimentConfig]:
     return [
-        # get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=False,
-        #                              run_label_noise_experiments=False,
-        #                              run_ood_class_experiments=True, epochs=10),
-        # get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=5),
-        # get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
-        #                              run_decreasing_dataset_experiments=False,
-        #                              run_label_noise_experiments=True, epochs=10),
-        # get_configs_for_dataset_name("Fashion MNIST", epochs=10),
+        get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=False,
+                                     run_label_noise_experiments=False,
+                                     run_ood_class_experiments=True, epochs=10),
+        get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=5),
+        get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
+                                     run_decreasing_dataset_experiments=False,
+                                     run_label_noise_experiments=True, epochs=10),
+        get_configs_for_dataset_name("Fashion MNIST", epochs=10),
         get_configs_for_dataset_name("UTKFace", epochs=1, run_ood_class_experiments=False,
                                      run_decreasing_dataset_experiments=False)
     ]
@@ -48,7 +50,6 @@ def get_configs_for_dataset_name(dataset_name, run_index=1, epochs=100, plotting
         dataset = get_dataset_for_name(dataset_name, run_index)
         is_regression = dataset.is_regression
 
-
     return ExperimentConfig(
             dataset_name=dataset_name_for_config,
             dataset=dataset,
@@ -69,12 +70,12 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         return get_test_mode_configs()
 
     return [
-        # *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="CIFAR10"),
-        # *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="blobs", run_ood_class_experiments=False),
-        # *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="Motor Imagery BCI",
-        #                                                        n_repetitions=N_EEG_SUBJECTS),
-        # *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="Fashion MNIST"),
-        # *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="Wine"),
-        # *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="AutoMPG", run_ood_class_experiments=False),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="CIFAR10"),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="blobs", run_ood_class_experiments=False),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="Motor Imagery BCI",
+                                                               n_repetitions=N_EEG_SUBJECTS),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="Fashion MNIST"),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="Wine"),
+        *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="AutoMPG", run_ood_class_experiments=False),
         *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="UTKFace", run_ood_class_experiments=False),
     ]

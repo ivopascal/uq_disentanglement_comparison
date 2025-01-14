@@ -1,9 +1,10 @@
 import keras
 
+from functools import lru_cache
 from disentanglement.datatypes import Dataset
 from disentanglement.settings import TEST_MODE
 
-
+@lru_cache(maxsize=None)
 def get_train_test_cifar_10() -> Dataset:
     (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0

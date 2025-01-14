@@ -1,10 +1,10 @@
 from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-
+from functools import lru_cache
 from disentanglement.datatypes import Dataset
 
-
+@lru_cache(maxsize=None)
 def get_train_test_wine() -> Dataset:
     X, y = load_wine(return_X_y=True)
 

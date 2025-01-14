@@ -2,13 +2,13 @@ import os
 
 import numpy as np
 import pandas as pd
+from functools import lru_cache
 from PIL import Image
 from disentanglement.datatypes import Dataset
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from sklearn.utils import shuffle
 from keras.preprocessing.image import load_img
-
 
 def fetch_images(images):
     features = []
@@ -20,8 +20,9 @@ def fetch_images(images):
     features = np.array(features)
     return features
 
-
+@lru_cache(maxsize=None)
 def get_train_test_utkface_regression():
+    print("Getting Faces!")
     base_dir = 'datasets/UTKFace/'
 
     image_paths = []

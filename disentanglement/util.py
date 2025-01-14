@@ -78,7 +78,7 @@ def load_results_from_file(experiment_config, architecture, meta_experiment_name
         return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name,
                                               n_logs=N_EEG_SUBJECTS)
 
-    if not experiment_config.dataset_name[-1].is_digit():
+    if not experiment_config.dataset:
         return load_and_combine_multiple_logs(experiment_config, architecture, meta_experiment_name,
                                               n_logs=N_REPETITIONS)
 
@@ -100,10 +100,9 @@ def print_correlations(gl_results, it_results):
     gl_epi_corr = np.corrcoef(-np.array(gl_results.epistemic_uncertainties),
                               gl_results.accuracies)[0, 1]
 
-    if not it_results:
+    if not it_results.aleatoric_uncertainties:
         it_ale_corr = -1.0
         it_epi_corr = -1.0
-
     else:
         it_ale_corr = np.corrcoef(-np.array(it_results.aleatoric_uncertainties),
                                   gl_results.accuracies)[0, 1]

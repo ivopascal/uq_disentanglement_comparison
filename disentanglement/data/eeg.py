@@ -2,12 +2,12 @@ import numpy as np
 from moabb.datasets import BNCI2014_001
 from moabb.paradigms import MotorImagery
 from sklearn.preprocessing import LabelEncoder
-
+from functools import lru_cache
 from disentanglement.datatypes import Dataset
 
 N_EEG_SUBJECTS = 9
 
-
+@lru_cache(maxsize=None)
 def get_eeg_data(subject_id):
     dataset = BNCI2014_001()        # load dataset
     paradigm = MotorImagery(        # make paradigm, filter between 7.5 and 30 Hz

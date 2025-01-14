@@ -11,7 +11,6 @@ from disentanglement.data.fashion_mnist import get_train_test_fashion_mnist
 from disentanglement.data.wine import get_train_test_wine
 
 
-@lru_cache(maxsize=None)
 def get_dataset_for_name(dataset_name, run_index):
     match dataset_name:
         case "CIFAR10":

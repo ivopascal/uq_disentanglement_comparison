@@ -1,8 +1,7 @@
 from typing import List
 
-from disentanglement.data.eeg import N_EEG_SUBJECTS
-
 from disentanglement.data.datasets import get_dataset_for_name
+from disentanglement.data.eeg import N_EEG_SUBJECTS
 from disentanglement.datatypes import UqModel, ExperimentConfig
 from disentanglement.models.architectures import get_architecture
 from disentanglement.settings import TEST_MODE, N_REPETITIONS
@@ -28,8 +27,8 @@ def get_configs_for_dataset_name(dataset_name, run_index=1, epochs=100, plotting
                                  run_decreasing_dataset_experiments=True,
                                  run_label_noise_experiments=True) -> ExperimentConfig:
     meta_experiments = []
-    # if run_ood_class_experiments:
-    #     meta_experiments.append("ood_class")
+    if run_ood_class_experiments:
+        meta_experiments.append("ood_class")
     if run_decreasing_dataset_experiments:
         meta_experiments.append("decreasing_dataset")
     if run_label_noise_experiments:
@@ -37,8 +36,8 @@ def get_configs_for_dataset_name(dataset_name, run_index=1, epochs=100, plotting
 
     BNN_name_epochs = {"MC-Dropout": epochs,
                        "MC-DropConnect": epochs,
-                       "Flipout": epochs * 5,
-                       "Deep Ensemble": epochs}
+                       "Deep Ensemble": epochs,
+                       "Flipout": epochs * 5}
 
     if plotting_mode:  # Special case for plotting multiple results. The run-index will be ignored
         dataset_name_for_config = dataset_name

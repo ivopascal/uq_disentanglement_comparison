@@ -9,16 +9,19 @@ from disentanglement.settings import TEST_MODE, N_REPETITIONS
 
 def get_test_mode_configs() -> List[ExperimentConfig]:
     return [
-        get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=True,
+        get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=False,
                                      run_label_noise_experiments=False,
-                                     run_ood_class_experiments=True, epochs=10),
-        get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=5),
+                                     run_ood_class_experiments=True, epochs=1),
+        get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=1,
+                                     run_label_noise_experiments=True),
         get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
                                      run_decreasing_dataset_experiments=False,
-                                     run_label_noise_experiments=True, epochs=10),
-        get_configs_for_dataset_name("Fashion MNIST", epochs=10),
+                                     run_label_noise_experiments=True, epochs=1),
+        # get_configs_for_dataset_name("Fashion MNIST", epochs=1, run_ood_class_experiments=False,
+        #                              run_decreasing_dataset_experiments=True, run_label_noise_experiments=False),
         get_configs_for_dataset_name("UTKFace", epochs=1, run_ood_class_experiments=False,
-                                     run_decreasing_dataset_experiments=False)
+                                     run_label_noise_experiments=False,
+                                     run_decreasing_dataset_experiments=True)
     ]
 
 
@@ -27,12 +30,12 @@ def get_configs_for_dataset_name(dataset_name, run_index=1, epochs=100, plotting
                                  run_decreasing_dataset_experiments=True,
                                  run_label_noise_experiments=True) -> ExperimentConfig:
     meta_experiments = []
-    # if run_ood_class_experiments:
-    #     meta_experiments.append("ood_class")
+    if run_ood_class_experiments:
+        meta_experiments.append("ood_class")
     if run_decreasing_dataset_experiments:
         meta_experiments.append("decreasing_dataset")
-    # if run_label_noise_experiments:
-    #     meta_experiments.append("label_noise")
+    if run_label_noise_experiments:
+        meta_experiments.append("label_noise")
 
     BNN_name_epochs = {"MC-Dropout": epochs,
                        "MC-DropConnect": epochs,

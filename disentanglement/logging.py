@@ -1,3 +1,4 @@
+import numpy as np
 from tqdm import tqdm
 
 from disentanglement.experiment_configs import get_experiment_configs
@@ -10,10 +11,9 @@ for experiment_config in get_experiment_configs():
         for meta_experiment in experiment_config.meta_experiments:
             training_runs_per_experiment = 1
             if meta_experiment == "ood_class":
-                if experiment_config.dataset_name == "CIFAR10":
-                    training_runs_per_experiment = 10
-                    if TEST_MODE:
-                        training_runs_per_experiment = 2
+                training_runs_per_experiment = len(np.unique(experiment_config.dataset.y_train))
+                if TEST_MODE:
+                    training_runs_per_experiment = 2
             elif meta_experiment == "label_noise":
                 training_runs_per_experiment = NUM_LABEL_NOISE_STEPS
             elif meta_experiment == "decreasing_dataset":
@@ -27,4 +27,4 @@ for experiment_config in get_experiment_configs():
                 number_of_models_to_train += training_runs_per_experiment
 
 
-TQDM = tqdm(total=number_of_models_to_train * 2)
+TQDM = tqdm(total=number_of_models_to_train * 3)

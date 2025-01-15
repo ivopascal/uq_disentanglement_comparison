@@ -1,14 +1,14 @@
 import gc
 import os.path
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Callable
 
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from sklearn.utils import shuffle
 
-from disentanglement.benchmarks.plotting import plot_ale_epi_acc_on_axes
+from disentanglement.benchmarks.plotting import plot_ale_epi_acc_on_axes, plot_results_on_idx
 from disentanglement.datatypes import UncertaintyResults, Dataset
 from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.logging import TQDM
@@ -65,28 +65,29 @@ def run_decreasing_dataset(dataset: Dataset, model_function, epochs) -> Dict[str
     return results
 
 
-def request_results(experiment_config, architecture, from_folder):
+def request_results_or_run(experiment_config, architecture, from_folder,
+                           run_function: Callable, meta_experiment_name: str):
     if from_folder:
         try:
             results, results_std = load_results_from_file(
                 experiment_config, architecture,
-                meta_experiment_name=META_EXPERIMENT_NAME)
-            print(f"Found results for {META_EXPERIMENT_NAME}, "
+                meta_experiment_name=meta_experiment_name)
+            print(f"Found results for {meta_experiment_name}, "
                   f"on {experiment_config.dataset_name}, "
                   f"with {architecture.uq_name}")
-            print(f"Correlation on changing dataset size - {architecture.uq_name}")
+            print(f"Correlation on {meta_experiment_name} - {architecture.uq_name}")
             print_correlations(results)
 
             return results, results_std
 
         except FileNotFoundError:
             print(
-                f"Failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+                f"Failed to find results for {meta_experiment_name}, "
+                f"on {experiment_config.dataset_name}, "
+                f"with {architecture.uq_name}")
 
-    results = run_decreasing_dataset(
-        experiment_config.dataset, architecture.model_function, architecture.epochs)
-    save_results_to_file(experiment_config, architecture, results,
-                         meta_experiment_name=META_EXPERIMENT_NAME)
+    results = run_function(experiment_config.dataset, architecture.model_function, architecture.epochs)
+    save_results_to_file(experiment_config, architecture, results, meta_experiment_name=meta_experiment_name)
 
     return results, None
 
@@ -94,47 +95,17 @@ def request_results(experiment_config, architecture, from_folder):
 def plot_decreasing_dataset(experiment_config, from_folder=False):
     fig, axes = plt.subplots(len(DISENTANGLEMENT_FUNCS), len(experiment_config.models), figsize=(10, 6), sharey=True,
                              sharex=True)
-    accuracy_y_ax_to_share = None
-    font_size = 14
-    plt.rcParams['font.size'] = font_size
+    fontsize = 14
+    plt.rcParams['font.size'] = fontsize
 
     for arch_idx, architecture in enumerate(experiment_config.models):
         TQDM.set_description(
             f"Running experiment  {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
 
-        results, results_std = request_results(
-            experiment_config, architecture, from_folder)
+        results, results_std = request_results_or_run(
+            experiment_config, architecture, from_folder, run_decreasing_dataset, "decreasing_dataset")
 
-        ## PLOTTING
-        is_first_column = arch_idx == 0
-        is_final_column = arch_idx == len(experiment_config.models) - 1
-
-        for disentanglement_idx, (disentanglement_name, disentanglement_results) in enumerate(results.items()):
-            if results_std:
-                disentanglement_results_std = results_std[disentanglement_name]
-            else:
-                disentanglement_results_std = None
-            accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[disentanglement_idx][arch_idx],
-                                                              disentanglement_results,
-                                                              accuracy_y_ax_to_share, is_final_column,
-                                                              std=disentanglement_results_std)
-
-            ## ADD HEADERS & LEGEND TO FIRST COLUMN
-            if is_first_column:
-                axes[disentanglement_idx][arch_idx].set_ylabel(f"{disentanglement_name}\nUncertainty",
-                                                               fontsize=font_size)
-
-        axes[0][arch_idx].set_title(architecture.uq_name, fontsize=font_size)
-        axes[-1][arch_idx].set_xlabel("Dataset size", fontsize=font_size)
-
-        if is_first_column:
-            handles, labels = axes[0][arch_idx].get_legend_handles_labels()
-
-            labels.append("Acc")
-            line = Line2D([0], [0], label='Acc', color='green')
-            handles.append(line)
-
-            axes[0][arch_idx].legend(handles=handles, labels=labels, loc='upper left', fontsize=10)
+        plot_results_on_idx(results, results_std, arch_idx, axes, experiment_config, architecture, META_EXPERIMENT_NAME)
 
     fig.tight_layout()
     if not os.path.exists(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/"):

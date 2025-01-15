@@ -7,10 +7,12 @@ from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from sklearn.utils import shuffle
 
-from disentanglement.benchmarks.decreasing_dataset import plot_ale_epi_acc_on_axes
+from disentanglement.benchmarks.decreasing_dataset import plot_ale_epi_acc_on_axes, request_results_or_run
+from disentanglement.benchmarks.plotting import plot_results_on_idx
 from disentanglement.datatypes import UncertaintyResults, ExperimentConfig, Dataset
 from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.logging import TQDM
+from disentanglement.models.disentanglement import DISENTANGLEMENT_FUNCS
 from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_LABEL_NOISE_STEPS
@@ -28,8 +30,8 @@ def partial_shuffle_dataset(x, y, percentage):
 
 
 def run_label_noise(dataset: Dataset, architecture_func, epochs):
-    gl_results = UncertaintyResults()
-    it_results = UncertaintyResults()
+    results = {disentanglement_name: UncertaintyResults() for disentanglement_name, func in
+               DISENTANGLEMENT_FUNCS.items()}
 
     noises = np.linspace(0, 1.0, NUM_LABEL_NOISE_STEPS)
 
@@ -40,75 +42,36 @@ def run_label_noise(dataset: Dataset, architecture_func, epochs):
         X_train_noisy, y_train_noisy = partial_shuffle_dataset(dataset.X_train, dataset.y_train, percentage=noise)
         X_test_noisy, y_test_noisy = partial_shuffle_dataset(dataset.X_test, dataset.y_test, percentage=noise)
         noisy_dataset = Dataset(X_train_noisy, y_train_noisy, X_test_noisy, y_test_noisy, is_regression=dataset.is_regression)
-        gl_results.append_values(*get_average_uncertainty_gaussian_logits(noisy_dataset, architecture_func, epochs),
-                                 noise)
 
-        it_results.append_values(*get_average_uncertainty_it(noisy_dataset, architecture_func, epochs), noise)
-
+        for disentanglement_name, disentanglement_func in DISENTANGLEMENT_FUNCS.items():
+            results[disentanglement_name].append_values(*disentanglement_func(noisy_dataset, architecture_func,
+                                                                              epochs), noise)
+            gc.collect()
         gc.collect()
 
-    return gl_results, it_results
+    return results
 
 
 def label_noise(experiment_config: ExperimentConfig, from_folder=False):
-    fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
-    plt.rcParams['font.size'] = 14
+    fig, axes = plt.subplots(len(DISENTANGLEMENT_FUNCS), len(experiment_config.models), figsize=(10, 6),
+                             sharey=True, sharex=True)
+    fontsize = 14
+    plt.rcParams['font.size'] = fontsize
 
-    accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
         TQDM.set_description(
             f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
 
-        gaussian_logits_results, it_results = None, None
-        if from_folder:
-            try:
-                gaussian_logits_results, it_results, gaussian_logits_std, it_std = load_results_from_file(
-                    experiment_config, architecture,
-                    meta_experiment_name=META_EXPERIMENT_NAME)
-                print(
-                    f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+        results, results_std = request_results_or_run(
+            experiment_config, architecture, from_folder,
+            run_function=run_label_noise, meta_experiment_name=META_EXPERIMENT_NAME)
 
-            except FileNotFoundError:
-                print(
-                    f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
-        if not gaussian_logits_results or not it_results:
-            gaussian_logits_results, it_results = run_label_noise(experiment_config.dataset,
-                                                                  architecture.model_function, architecture.epochs)
-            gaussian_logits_std, it_std = None, None
-            save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
-                                 meta_experiment_name=META_EXPERIMENT_NAME)
-        if not os.path.exists(f"{FIGURE_FOLDER}/noise_dataset/"):
-            os.mkdir(f"{FIGURE_FOLDER}/noise_dataset")
+        plot_results_on_idx(results, results_std, arch_idx, axes, experiment_config, architecture,
+                            META_EXPERIMENT_NAME)
 
-        is_first_column = arch_idx == 0
-        is_final_column = arch_idx == len(experiment_config.models) - 1
-
-        accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[0][arch_idx], gaussian_logits_results,
-                                                          accuracy_y_ax_to_share, is_final_column,
-                                                          std=gaussian_logits_std)
-        accuracy_y_ax_to_share = plot_ale_epi_acc_on_axes(axes[1][arch_idx], it_results,
-                                                          accuracy_y_ax_to_share, is_final_column, std=it_std)
-
-        if gaussian_logits_std:
-            print(f"Label Noise - {architecture.uq_name}")
-            print_correlations(gaussian_logits_results, it_results)
-
-        axes[0][arch_idx].set_title(architecture.uq_name)
-        axes[1][arch_idx].set_xlabel("Labels shuffled")
-        if is_first_column:
-            axes[0][arch_idx].set_ylabel("Gaussian Logits\nUncertainty")
-            axes[1][arch_idx].set_ylabel("Information Theoretic\nUncertainty")
-
-            handles, labels = axes[0][arch_idx].get_legend_handles_labels()
-
-            labels.append("Acc")
-            line = Line2D([0], [0], label='Acc', color='green')
-            handles.append(line)
-
-            axes[0][arch_idx].legend(handles=handles, labels=labels, loc='upper left', fontsize=10)
-
-    # fig.suptitle(f"Disentangled uncertainty over shuffled labels for {experiment_config.dataset_name}", fontsize=20)
     fig.tight_layout()
+    if not os.path.exists(f"{FIGURE_FOLDER}/noise_dataset/"):
+        os.mkdir(f"{FIGURE_FOLDER}/noise_dataset")
 
     if TEST_MODE:
         fig.savefig(

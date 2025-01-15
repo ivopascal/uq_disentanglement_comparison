@@ -9,14 +9,14 @@ from disentanglement.settings import TEST_MODE, N_REPETITIONS
 
 def get_test_mode_configs() -> List[ExperimentConfig]:
     return [
-        # get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=False,
-        #                              run_label_noise_experiments=False,
-        #                              run_ood_class_experiments=True, epochs=10),
-        # get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=5),
-        # get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
-        #                              run_decreasing_dataset_experiments=False,
-        #                              run_label_noise_experiments=True, epochs=10),
-        # get_configs_for_dataset_name("Fashion MNIST", epochs=10),
+        get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=False,
+                                     run_label_noise_experiments=False,
+                                     run_ood_class_experiments=True, epochs=10),
+        get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=5),
+        get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
+                                     run_decreasing_dataset_experiments=False,
+                                     run_label_noise_experiments=True, epochs=10),
+        get_configs_for_dataset_name("Fashion MNIST", epochs=10),
         get_configs_for_dataset_name("UTKFace", epochs=1, run_ood_class_experiments=False,
                                      run_decreasing_dataset_experiments=False)
     ]

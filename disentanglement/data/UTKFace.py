@@ -10,6 +10,7 @@ from tqdm import tqdm
 from sklearn.utils import shuffle
 from keras.preprocessing.image import load_img
 
+
 def fetch_images(images):
     features = []
     for image in tqdm(images):
@@ -20,9 +21,9 @@ def fetch_images(images):
     features = np.array(features)
     return features
 
+
 @lru_cache(maxsize=None)
 def get_train_test_utkface_regression():
-    print("Getting Faces!")
     base_dir = 'datasets/UTKFace/'
 
     image_paths = []

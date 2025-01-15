@@ -1,21 +1,20 @@
-import gc
 import os
 from datetime import datetime
-from typing import Tuple
+from typing import Dict
 
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve, accuracy_score, auc
 
-import keras.backend as K
-
-from disentanglement.datatypes import UncertaintyResults
+from disentanglement.benchmarks.decreasing_dataset import request_results_or_run
+from disentanglement.datatypes import UncertaintyResults, Dataset
 from disentanglement.experiment_configs import get_experiment_configs
-from disentanglement.models.information_theoretic_models import train_it_model, expected_entropy, mutual_information
-from disentanglement.models.gaussian_logits_models import train_gaussian_logits_model, uncertainty
-from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, TEST_MODE, FIGURE_FOLDER
 from disentanglement.logging import TQDM
-from disentanglement.util import load_results_from_file, save_results_to_file
+from disentanglement.models.disentanglement import DISENTANGLEMENT_FUNCS
+from disentanglement.models.gaussian_logits_models import get_ood_tprs_gaussian_logits
+from disentanglement.models.information_theoretic_models import get_ood_tprs_it
+from disentanglement.models.logit_variance import get_ood_tprs_logit_variance
+from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
 
 META_EXPERIMENT_NAME = "ood_class"
 
@@ -27,9 +26,20 @@ def determine_tprs_for_roc(base_fpr, y_ood_true, y_ood_score):
     return tpr
 
 
-def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[UncertaintyResults, UncertaintyResults]:
+def get_ood_disentanglement_tprs_func(disentanglement_name):
+    match disentanglement_name:
+        case "gaussian_logits":
+            return get_ood_tprs_gaussian_logits
+        case "it":
+            return get_ood_tprs_it
+        case "logit_variance":
+            return get_ood_tprs_logit_variance
+        case _:
+            raise ValueError(f"No OoD Disentanglement func known for {disentanglement_name}")
+
+
+def run_ood_class_detection(dataset, architecture_func, epochs) -> Dict[str, UncertaintyResults]:
     ood_classes = np.unique(dataset.y_train)
-    n_classes = len(np.unique(dataset.y_train))
     y_test = dataset.y_test.reshape(-1)
     y_train = dataset.y_train.reshape(-1)
 
@@ -39,59 +49,35 @@ def run_ood_class_detection(dataset, architecture_func, epochs) -> Tuple[Uncerta
         epochs = 1
         ood_classes = ood_classes[:2]
 
-    ale_gaussian_logit_tprs = []
-    epi_gaussian_logit_tprs = []
-    ale_it_tprs = []
-    epi_it_tprs = []
-    for ood_class in ood_classes:
-        X_train_id = dataset.X_train[y_train != ood_class]
-        y_train_id = dataset.y_train[y_train != ood_class]
-        y_test_ood = y_test == ood_class
+    results = {disentanglement_name: UncertaintyResults() for disentanglement_name, func in
+               DISENTANGLEMENT_FUNCS.items()}
+    for disentanglement_name, _ in DISENTANGLEMENT_FUNCS.items():
+        ale_tprs = []
+        epi_tprs = []
+        accuracies = []
+        for ood_class in ood_classes:
+            X_train_id = dataset.X_train[y_train != ood_class]
+            y_train_id = dataset.y_train[y_train != ood_class]
+            y_test_ood = y_test == ood_class
+            ood_dataset = Dataset(X_train_id, y_train_id, dataset.X_test, y_test_ood,
+                                  is_regression=dataset.is_regression)
 
-        # Information Theoretic part
-        it_model = train_it_model(architecture_func, X_train_id, y_train_id, n_classes, epochs=epochs)
-        it_preds = it_model.predict_samples(dataset.X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
-        ale_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood,
-                                                  expected_entropy(np.delete(it_preds, ood_class, axis=2))))
-        epi_it_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood,
-                                                  mutual_information(np.delete(it_preds, ood_class, axis=2))))
+            ood_disentanglement_tprs_func = get_ood_disentanglement_tprs_func(disentanglement_name)  # TODO
 
-        K.clear_session()
-        del it_model
-        gc.collect()
+            preds, ale_uncertainties, epi_uncertainties = ood_disentanglement_tprs_func(ood_dataset, architecture_func,
+                                                                                        epochs, ood_class)
+            ale_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, ale_uncertainties))
+            epi_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, epi_uncertainties))
 
-        # Sanity check
-        accuracy = accuracy_score(y_test, it_preds.mean(axis=0).argmax(axis=1))
-        if accuracy < 0.4:
-            print(f"Warning, low accuracy: {accuracy} with Information Theoretic model")
+            # Sanity check
+            accuracy = accuracy_score(y_test[y_test != ood_class], preds[y_test != ood_class])
+            accuracies.append(accuracy)
+        results[disentanglement_name] = UncertaintyResults(accuracies=np.ones_like(base_fpr) * np.mean(accuracies),
+                                                           aleatoric_uncertainties=np.array(ale_tprs).mean(axis=0),
+                                                           epistemic_uncertainties=np.array(epi_tprs).mean(axis=0),
+                                                           changed_parameter_values=base_fpr)
 
-        # Gaussian Logits part
-        gaussian_logits_model = train_gaussian_logits_model(architecture_func, X_train_id, y_train_id,
-                                                            n_classes, epochs=epochs)
-        pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE)
-
-        ale_gaussian_logits = uncertainty(np.delete(pred_ale_std, ood_class, axis=1))
-        epi_gaussian_logits = uncertainty(np.delete(pred_epi_std, ood_class, axis=1))
-        ale_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, ale_gaussian_logits))
-        epi_gaussian_logit_tprs.append(determine_tprs_for_roc(base_fpr, y_test_ood, epi_gaussian_logits))
-
-        K.clear_session()
-        del gaussian_logits_model
-        gc.collect()
-
-    gl_results = UncertaintyResults(accuracies=np.empty_like(base_fpr),
-                                    aleatoric_uncertainties=np.array(ale_gaussian_logit_tprs).mean(axis=0),
-                                    epistemic_uncertainties=np.array(epi_gaussian_logit_tprs).mean(axis=0),
-                                    changed_parameter_values=base_fpr
-                                    )
-
-    it_results = UncertaintyResults(accuracies=np.empty_like(base_fpr),
-                                    aleatoric_uncertainties=np.array(ale_it_tprs).mean(axis=0),
-                                    epistemic_uncertainties=np.array(epi_it_tprs).mean(axis=0),
-                                    changed_parameter_values=base_fpr
-                                    )
-
-    return gl_results, it_results
+    return results
 
 
 def plot_roc_on_ax(ax, aleatoric_tpr, epistemic_tpr, base_fpr, std=None):
@@ -114,59 +100,36 @@ def plot_ood_class_detection(experiment_config, from_folder=None):
     if not os.path.exists(f"{FIGURE_FOLDER}/ood_class/"):
         os.mkdir(f"{FIGURE_FOLDER}/ood_class/")
 
-    fig, axes = plt.subplots(2, len(experiment_config.models), figsize=(10, 6), sharey=True, sharex=True)
+    fig, axes = plt.subplots(len(DISENTANGLEMENT_FUNCS), len(experiment_config.models), figsize=(10, 6), sharey=True,
+                             sharex=True)
 
     for arch_idx, architecture in enumerate(experiment_config.models):
         TQDM.set_description(
             f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
 
-        gaussian_logits_results, it_results = None, None
-        if from_folder:
-            try:
-                gaussian_logits_results, it_results, gaussian_logits_std, it_std = load_results_from_file(
-                    experiment_config, architecture,
-                    meta_experiment_name=META_EXPERIMENT_NAME)
-                print(
-                    f"Found results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
+        results, results_std = request_results_or_run(
+            experiment_config, architecture, from_folder, run_ood_class_detection, META_EXPERIMENT_NAME)
 
-            except FileNotFoundError:
-                print(
-                    f"failed to find results for {META_EXPERIMENT_NAME}, on {experiment_config.dataset_name}, with {architecture.uq_name}")
-        if not gaussian_logits_results or not it_results:
-            gaussian_logits_results, it_results = run_ood_class_detection(experiment_config.dataset,
-                                                                          architecture.model_function,
-                                                                          architecture.epochs)
-            gaussian_logits_std = None
-            it_std = None
-            save_results_to_file(experiment_config, architecture, gaussian_logits_results, it_results,
-                                 meta_experiment_name=META_EXPERIMENT_NAME)
+        for disentanglement_idx, (disentanglement_name, disentanglement_results) in enumerate(results.items()):
+            if results_std:
+                disentanglement_results_std = results_std[disentanglement_name]
+            else:
+                disentanglement_results_std = None
+            ale_auc, epi_auc, ale_auc_std, epi_auc_std = plot_roc_on_ax(axes[disentanglement_idx][arch_idx],
+                                                                        disentanglement_results.aleatoric_uncertainties,
+                                                                        disentanglement_results.epistemic_uncertainties,
+                                                                        disentanglement_results.changed_parameter_values,
+                                                                        std=disentanglement_results_std)
+            print(f"OOD AUROC {architecture.uq_name}, {disentanglement_name}")
+            print(f"Ale {ale_auc:.3} \pm {ale_auc_std:.4}\t\t Epi {epi_auc:.3} \pm {epi_auc_std:.4}")
+            if arch_idx == 0:
+                axes[disentanglement_idx][arch_idx].set_ylabel(f"{disentanglement_name}\nTrue Positive Rate")
 
-        gl_ale_auc, gl_epi_auc, gl_ale_auc_std, gl_epi_auc_std = plot_roc_on_ax(axes[0][arch_idx],
-                                                                                gaussian_logits_results.aleatoric_uncertainties,
-                                                                                gaussian_logits_results.epistemic_uncertainties,
-                                                                                gaussian_logits_results.changed_parameter_values,
-                                                                                std=gaussian_logits_std)
-        it_ale_auc, it_epi_auc, it_ale_auc_std, it_epi_auc_std = plot_roc_on_ax(axes[1][arch_idx],
-                                                                                it_results.aleatoric_uncertainties,
-                                                                                it_results.epistemic_uncertainties,
-                                                                                it_results.changed_parameter_values,
-                                                                                std=it_std)
-
-        axes[0][arch_idx].set_title(architecture.uq_name)
-        axes[1][arch_idx].set_xlabel("False Positive Rate")
-
-        if arch_idx == 0:
-            axes[0][arch_idx].set_ylabel("Gaussian Logits\nTrue Positive Rate")
-            axes[1][arch_idx].set_ylabel("Information Theoretic\nTrue Positive Rate")
+            axes[disentanglement_idx][arch_idx].set_title(architecture.uq_name)
+            axes[disentanglement_idx][arch_idx].set_xlabel("False Positive Rate")
 
         if arch_idx == len(experiment_config.models) - 1:
             axes[0][arch_idx].legend(loc="lower right")
-
-        print(f"OOD AUROC {architecture.uq_name}")
-        print(f"GL Ale \t\t GL Epi \t IT Ale \t IT Epi")
-
-        print(
-            f"{gl_ale_auc:.3} \pm {gl_ale_auc_std:.4} & \t {gl_epi_auc:.3} \pm {gl_epi_auc_std:.4} & \t {it_ale_auc:.3} \pm {it_ale_auc_std:.4} & \t {it_epi_auc:.3} \pm {it_epi_auc_std:.4}")
 
     fig.tight_layout()
 

@@ -1,5 +1,5 @@
 import gc
-from typing import Union
+from typing import Union, Callable
 
 import numpy as np
 from keras.layers import Dense, Input
@@ -15,6 +15,7 @@ from disentanglement.datatypes import Dataset
 from disentanglement.logging import TQDM
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, MODEL_TRAIN_VERBOSE
 from disentanglement.util import custom_regression_gaussian_nll_loss
+import keras.backend as K
 
 
 def uncertainty(probs):
@@ -130,6 +131,7 @@ def get_average_uncertainty_gaussian_logits(dataset: Dataset, architecture_func,
         pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test,
                                                                               disentangle_uncertainty=True)
         score = mean_squared_error(dataset.y_test, pred_mean)
+
         return (score,
                 pred_ale_std.mean(),
                 pred_epi_std.mean())
@@ -137,7 +139,36 @@ def get_average_uncertainty_gaussian_logits(dataset: Dataset, architecture_func,
         pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE,
                                                                               num_samples=num_samples)
         score = accuracy_score(dataset.y_test, pred_mean.argmax(axis=1))
-
+        del gaussian_logits_model
+        K.clear_session()
+        gc.collect()
         return (score,
                 uncertainty(pred_ale_std).mean(),
                 uncertainty(pred_epi_std).mean())
+
+
+def get_ood_tprs_gaussian_logits(dataset: Dataset, architecture_func: Callable, epochs: int, ood_class: int):
+    if dataset.is_regression:
+        raise ValueError("OoD detection for regression is not implemented")
+
+    n_classes = len(np.unique(dataset.y_train))
+
+    gaussian_logits_model = train_gaussian_logits_model(architecture_func, dataset.X_train, dataset.y_train,
+                                                        n_classes, epochs=epochs)
+
+    if isinstance(gaussian_logits_model.model, DeepEnsembleClassifier):
+        num_samples = gaussian_logits_model.model.num_estimators
+    else:
+        num_samples = NUM_SAMPLES
+
+    pred_mean, pred_ale_std, pred_epi_std = gaussian_logits_model.predict(dataset.X_test, batch_size=BATCH_SIZE,
+                                                                          num_samples=num_samples)
+
+    ale_uncertainties = uncertainty(np.delete(pred_ale_std, ood_class, axis=1))
+    epi_uncertainties = uncertainty(np.delete(pred_epi_std, ood_class, axis=1))
+
+    del gaussian_logits_model
+    K.clear_session()
+    gc.collect()
+
+    return pred_mean.argmax(axis=1), ale_uncertainties, epi_uncertainties

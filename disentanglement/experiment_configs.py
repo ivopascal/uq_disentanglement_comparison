@@ -11,14 +11,17 @@ def get_test_mode_configs() -> List[ExperimentConfig]:
     return [
         get_configs_for_dataset_name("CIFAR10", run_decreasing_dataset_experiments=False,
                                      run_label_noise_experiments=False,
-                                     run_ood_class_experiments=True, epochs=10),
-        get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=5),
+                                     run_ood_class_experiments=True, epochs=1),
+        get_configs_for_dataset_name("blobs", run_ood_class_experiments=False, epochs=1,
+                                     run_label_noise_experiments=True),
         get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
                                      run_decreasing_dataset_experiments=False,
-                                     run_label_noise_experiments=True, epochs=10),
-        get_configs_for_dataset_name("Fashion MNIST", epochs=10),
+                                     run_label_noise_experiments=True, epochs=1),
+        # get_configs_for_dataset_name("Fashion MNIST", epochs=1, run_ood_class_experiments=False,
+        #                              run_decreasing_dataset_experiments=True, run_label_noise_experiments=False),
         get_configs_for_dataset_name("UTKFace", epochs=1, run_ood_class_experiments=False,
-                                     run_decreasing_dataset_experiments=False)
+                                     run_label_noise_experiments=False,
+                                     run_decreasing_dataset_experiments=True)
     ]
 
 
@@ -78,3 +81,5 @@ def get_experiment_configs() -> List[ExperimentConfig]:
         *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="AutoMPG", run_ood_class_experiments=False),
         *get_configs_for_dataset_name_repetitions_and_plotting(dataset_name="UTKFace", run_ood_class_experiments=False),
     ]
+
+

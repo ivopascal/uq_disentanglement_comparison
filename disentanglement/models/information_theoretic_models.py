@@ -1,6 +1,8 @@
-from typing import Union
+import gc
+from typing import Union, Callable
 
 import numpy as np
+import keras.backend as K
 from keras.layers import Dense
 from keras.src.callbacks import CSVLogger
 from keras_uncertainty.models import StochasticClassifier
@@ -12,9 +14,13 @@ from disentanglement.models.architectures import CustomDeepEnsembleClassifier
 from disentanglement.settings import BATCH_SIZE, NUM_SAMPLES, MODEL_TRAIN_VERBOSE
 
 
-def predictive_entropy(probs, axis=-1, eps=1e-6) -> np.ndarray:
-    probs = np.mean(probs, axis=0)
+def entropy(probs, axis=-1, eps=1e-6):
     return -np.sum(probs * np.log(probs + eps), axis=axis)
+
+
+def predictive_entropy(probs, axis=-1) -> np.ndarray:
+    probs = np.mean(probs, axis=0)
+    return entropy(probs, axis)
 
 
 def expected_entropy(probs, eps=1e-6) -> np.ndarray:
@@ -64,3 +70,22 @@ def get_average_uncertainty_it(dataset: Dataset, architecture_func, epochs):
     return accuracy_score(dataset.y_test, it_preds.mean(axis=0).argmax(axis=1)), \
         expected_entropy(it_preds).mean(), \
         mutual_information(it_preds).mean()
+
+
+def get_ood_tprs_it(dataset: Dataset, architecture_func: Callable, epochs: int, ood_class: int):
+    if dataset.is_regression:
+        raise ValueError("OoD detection for regression is not implemented")
+
+    n_classes = len(np.unique(dataset.y_train))
+
+    it_model = train_it_model(architecture_func, dataset.X_train, dataset.y_train, n_classes, epochs=epochs)
+    it_preds = it_model.predict_samples(dataset.X_test, num_samples=NUM_SAMPLES, batch_size=BATCH_SIZE)
+
+    ale_uncertainties = expected_entropy(np.delete(it_preds, ood_class, axis=2))
+    epi_uncertainties = mutual_information(np.delete(it_preds, ood_class, axis=2))
+
+    K.clear_session()
+    del it_model
+    gc.collect()
+
+    return it_preds.mean(axis=0).argmax(axis=1), ale_uncertainties, epi_uncertainties

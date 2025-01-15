@@ -4,6 +4,7 @@ from disentanglement.datatypes import Dataset
 
 N_BLOBS_TRAINING_SAMPLES = 500
 
+
 @lru_cache(maxsize=None)
 def get_train_test_blobs() -> Dataset:
     X_train, y_train = make_blobs(n_samples=N_BLOBS_TRAINING_SAMPLES, n_features=2, centers=[[-1.5, 1.5], [0, -1.5]])

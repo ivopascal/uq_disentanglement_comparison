@@ -7,6 +7,7 @@ from disentanglement.datatypes import Dataset
 
 N_EEG_SUBJECTS = 9
 
+
 @lru_cache(maxsize=None)
 def get_eeg_data(subject_id):
     dataset = BNCI2014_001()        # load dataset

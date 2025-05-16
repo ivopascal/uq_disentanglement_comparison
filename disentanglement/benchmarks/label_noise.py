@@ -4,20 +4,15 @@ from datetime import datetime
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.lines import Line2D
 from sklearn.utils import shuffle
 
-from disentanglement.benchmarks.decreasing_dataset import plot_ale_epi_acc_on_axes, request_results_or_run
+from disentanglement.benchmarks.decreasing_dataset import request_results_or_run
 from disentanglement.benchmarks.plotting import plot_results_on_idx
 from disentanglement.datatypes import UncertaintyResults, ExperimentConfig, Dataset
 from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.logging import TQDM
 from disentanglement.models.disentanglement import DISENTANGLEMENT_FUNCS
-from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
-from disentanglement.models.information_theoretic_models import get_average_uncertainty_it
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER, NUM_LABEL_NOISE_STEPS
-from disentanglement.util import print_correlations
-from disentanglement.results_storing import save_results_to_file, load_results_from_file
 
 META_EXPERIMENT_NAME = 'label_noise'
 
@@ -41,7 +36,8 @@ def run_label_noise(dataset: Dataset, architecture_func, epochs):
     for noise in noises:
         X_train_noisy, y_train_noisy = partial_shuffle_dataset(dataset.X_train, dataset.y_train, percentage=noise)
         X_test_noisy, y_test_noisy = partial_shuffle_dataset(dataset.X_test, dataset.y_test, percentage=noise)
-        noisy_dataset = Dataset(X_train_noisy, y_train_noisy, X_test_noisy, y_test_noisy, is_regression=dataset.is_regression)
+        noisy_dataset = Dataset(X_train_noisy, y_train_noisy, X_test_noisy, y_test_noisy,
+                                is_regression=dataset.is_regression)
 
         for disentanglement_name, disentanglement_func in DISENTANGLEMENT_FUNCS.items():
             results[disentanglement_name].append_values(*disentanglement_func(noisy_dataset, architecture_func,
@@ -58,6 +54,7 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
     fontsize = 14
     plt.rcParams['font.size'] = fontsize
 
+    accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
         TQDM.set_description(
             f"Running experiment {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
@@ -66,8 +63,9 @@ def label_noise(experiment_config: ExperimentConfig, from_folder=False):
             experiment_config, architecture, from_folder,
             run_function=run_label_noise, meta_experiment_name=META_EXPERIMENT_NAME)
 
-        plot_results_on_idx(results, results_std, arch_idx, axes, experiment_config, architecture,
-                            META_EXPERIMENT_NAME)
+        accuracy_y_ax_to_share = plot_results_on_idx(results, results_std, arch_idx, axes, experiment_config,
+                                                     architecture,
+                                                     META_EXPERIMENT_NAME, accuracy_y_ax_to_share)
 
     fig.tight_layout()
     if not os.path.exists(f"{FIGURE_FOLDER}/noise_dataset/"):

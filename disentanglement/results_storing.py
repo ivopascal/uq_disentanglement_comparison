@@ -38,9 +38,10 @@ def load_and_combine_multiple_logs(experiment_config, architecture, meta_experim
             df = pd.concat(dfs)
             df_std = df.groupby(df.index).sem()
             df = df.groupby(df.index).mean()
-        except TypeError:
-            df = None
-            df_std = None
+        except (TypeError, ValueError):
+            results[disentanglement_name] = None
+            results_std[disentanglement_name] = None
+            raise ValueError(f"There are no logs available for {meta_experiment_name} {experiment_config.dataset_name} {architecture.uq_name} {disentanglement_name}.")
 
         results[disentanglement_name] = UncertaintyResults(**df.to_dict(orient='list'))
         results_std[disentanglement_name] = UncertaintyResults(**df_std.to_dict(orient='list'))

@@ -7,8 +7,8 @@ from keras import backend as K
 def get_wine_backbone(input_shape=13):
     model = Sequential()
     model.add(Input(input_shape))
-    model.add(Dense(32))
-    model.add(Dense(32))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(32, activation='relu'))
 
     return model
 

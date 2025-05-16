@@ -4,18 +4,18 @@ from datetime import datetime
 from typing import Dict, Callable
 
 import numpy as np
+from disentanglement.models.gaussian_logits_models import get_average_uncertainty_gaussian_logits
 from matplotlib import pyplot as plt
-from matplotlib.lines import Line2D
 from sklearn.utils import shuffle
 
-from disentanglement.benchmarks.plotting import plot_ale_epi_acc_on_axes, plot_results_on_idx
+from disentanglement.benchmarks.plotting import plot_results_on_idx
 from disentanglement.datatypes import UncertaintyResults, Dataset
 from disentanglement.experiment_configs import get_experiment_configs
 from disentanglement.logging import TQDM
 from disentanglement.models.disentanglement import DISENTANGLEMENT_FUNCS
+from disentanglement.results_storing import save_results_to_file, load_results_from_file
 from disentanglement.settings import TEST_MODE, FIGURE_FOLDER
 from disentanglement.util import print_correlations
-from disentanglement.results_storing import save_results_to_file, load_results_from_file
 
 META_EXPERIMENT_NAME = "decreasing_dataset"
 DATASET_SIZES = [0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1.0]
@@ -93,19 +93,35 @@ def request_results_or_run(experiment_config, architecture, from_folder,
 
 
 def plot_decreasing_dataset(experiment_config, from_folder=False):
-    fig, axes = plt.subplots(len(DISENTANGLEMENT_FUNCS), len(experiment_config.models), figsize=(10, 6), sharey=True,
-                             sharex=True)
+    disentanglement_funcs_to_plot = DISENTANGLEMENT_FUNCS
+    if experiment_config.dataset_name in ["AutoMPG", "UTKFace"]:
+        disentanglement_funcs_to_plot = {"gaussian_logits": get_average_uncertainty_gaussian_logits}
+
     fontsize = 14
     plt.rcParams['font.size'] = fontsize
+    fig, axes = plt.subplots(len(disentanglement_funcs_to_plot), len(experiment_config.models), figsize=(10, 6), sharey=True,
+                             sharex=True)
+    axes = np.reshape(axes, (len(disentanglement_funcs_to_plot), len(experiment_config.models)))
 
+    accuracy_y_ax_to_share = None
     for arch_idx, architecture in enumerate(experiment_config.models):
         TQDM.set_description(
             f"Running experiment  {META_EXPERIMENT_NAME} on {experiment_config.dataset_name} with {architecture.uq_name}")
 
         results, results_std = request_results_or_run(
             experiment_config, architecture, from_folder, run_decreasing_dataset, "decreasing_dataset")
+        # results['gaussian_logits'].changed_parameter_values.pop(0)
+        # results['gaussian_logits'].accuracies.pop(0)
+        # results['gaussian_logits'].aleatoric_uncertainties.pop(0)
+        # results['gaussian_logits'].epistemic_uncertainties.pop(0)
+        # if results_std:
+        #     results_std['gaussian_logits'].changed_parameter_values.pop(0)
+        #     results_std['gaussian_logits'].accuracies.pop(0)
+        #     results_std['gaussian_logits'].aleatoric_uncertainties.pop(0)
+        #     results_std['gaussian_logits'].epistemic_uncertainties.pop(0)
+        accuracy_y_ax_to_share = plot_results_on_idx(results, results_std, arch_idx, axes, experiment_config, architecture, META_EXPERIMENT_NAME, accuracy_y_ax_to_share)
 
-        plot_results_on_idx(results, results_std, arch_idx, axes, experiment_config, architecture, META_EXPERIMENT_NAME)
+
 
     fig.tight_layout()
     if not os.path.exists(f"{FIGURE_FOLDER}/{META_EXPERIMENT_NAME}/"):

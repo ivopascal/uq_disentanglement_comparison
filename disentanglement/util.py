@@ -16,9 +16,9 @@ def print_correlations(results: Dict[str, UncertaintyResults]):
             ale_corr = -1.0
             epi_corr = -1.0
         else:
-            ale_corr = np.corrcoef(-np.array(disentanglement_results.aleatoric_uncertainties),
+            ale_corr = np.corrcoef(np.array(disentanglement_results.aleatoric_uncertainties),
                                    disentanglement_results.accuracies)[0, 1]
-            epi_corr = np.corrcoef(-np.array(disentanglement_results.epistemic_uncertainties),
+            epi_corr = np.corrcoef(np.array(disentanglement_results.epistemic_uncertainties),
                                    disentanglement_results.accuracies)[0, 1]
 
         print(f"{disentanglement_name} Ale corr \t {disentanglement_name} Epi corr")

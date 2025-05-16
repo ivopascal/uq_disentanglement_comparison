@@ -17,8 +17,8 @@ def get_test_mode_configs() -> List[ExperimentConfig]:
         get_configs_for_dataset_name("Motor Imagery BCI", run_ood_class_experiments=False,
                                      run_decreasing_dataset_experiments=False,
                                      run_label_noise_experiments=True, epochs=1),
-        # get_configs_for_dataset_name("Fashion MNIST", epochs=1, run_ood_class_experiments=False,
-        #                              run_decreasing_dataset_experiments=True, run_label_noise_experiments=False),
+        get_configs_for_dataset_name("Fashion MNIST", epochs=1, run_ood_class_experiments=False,
+                                     run_decreasing_dataset_experiments=True, run_label_noise_experiments=False),
         get_configs_for_dataset_name("UTKFace", epochs=1, run_ood_class_experiments=False,
                                      run_label_noise_experiments=False,
                                      run_decreasing_dataset_experiments=True)
@@ -39,8 +39,9 @@ def get_configs_for_dataset_name(dataset_name, run_index=1, epochs=100, plotting
 
     BNN_name_epochs = {"MC-Dropout": epochs,
                        "MC-DropConnect": epochs,
-                       "Deep Ensemble": epochs,
-                       "Flipout": epochs * 5}
+                       "Flipout": epochs * 5,
+                       "Deep Ensemble": epochs
+    }
 
     if plotting_mode:  # Special case for plotting multiple results. The run-index will be ignored
         dataset_name_for_config = dataset_name

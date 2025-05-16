@@ -11,7 +11,10 @@ for experiment_config in get_experiment_configs():
         for meta_experiment in experiment_config.meta_experiments:
             training_runs_per_experiment = 1
             if meta_experiment == "ood_class":
-                training_runs_per_experiment = len(np.unique(experiment_config.dataset.y_train))
+                if experiment_config.dataset:
+                    training_runs_per_experiment = len(np.unique(experiment_config.dataset.y_train))
+                else:
+                    training_runs_per_experiment = 0
                 if TEST_MODE:
                     training_runs_per_experiment = 2
             elif meta_experiment == "label_noise":

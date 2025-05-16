@@ -6,5 +6,5 @@ from disentanglement.models.logit_variance import get_average_uncertainty_logit_
 DISENTANGLEMENT_FUNCS = {
     "gaussian_logits": get_average_uncertainty_gaussian_logits,
     "it": get_average_uncertainty_it,
-    "logit_variance": get_average_uncertainty_logit_variance,
+    # "logit_variance": get_average_uncertainty_logit_variance,
 }

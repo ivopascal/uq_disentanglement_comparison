@@ -37,8 +37,17 @@ Additionally, the `notebooks` folder has some jupyter notebooks which contain sm
 
 # Attribution and context
 
-This repository was built to run the experiments for a paper that is currently under review.
-The paper gives further introduction to the problem and an interpretation of the results. The paper is available upon request. Previous results as figures or data files are also available upon request.
+This repository run the experiments from [**"Measuring Uncertainty Disentanglement Error in Classification"** 
+by Ivo Pascal de Jong, Andreea Ioana Sburlea, Matthia Sabatelli & Matias Valdenegro-Toro](https://arxiv.org/abs/2408.12175).
+We additionally provide a [separate repository for calcutaing Disentanglement Error](https://github.com/ivopascal/disentanglement_error).
 
-For attribution, citing the to-be-reviewed paper is appreciated.
+For attribution please cite:
 
+```text
+@article{de2024disentangled,
+  title={Measuring Uncertainty Disentanglement Error in Classification},
+  author={de Jong, Ivo Pascal and Sburlea, Andreea Ioana, Sabatelli, Matthia and Valdenegro-Toro, Matias},
+  journal={arXiv preprint arXiv:2408.12175},
+  year={2024}
+}
+```
